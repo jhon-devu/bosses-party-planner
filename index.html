@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestión de Parties · Bosses</title>
+<style>
+  :root {
+    --bg: #f4f5f8;
+    --panel: #ffffff;
+    --panel-2: #eef0f5;
+    --text: #1c1e26;
+    --muted: #6b7080;
+    --border: #dde0e8;
+    --accent: #6c5ce7;
+    --accent-2: #00b894;
+    --warn: #e17055;
+    --pending: #fdcb6e;
+    --danger: #e63946;
+    --danger-bg: rgba(230, 57, 70, 0.1);
+    --shadow: 0 1px 3px rgba(20,20,30,0.08), 0 1px 2px rgba(20,20,30,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14151c;
+      --panel: #1c1e28;
+      --panel-2: #23252f;
+      --text: #eceef4;
+      --muted: #9aa0b4;
+      --border: #2e3140;
+      --accent: #9c8cff;
+      --accent-2: #2ed9a8;
+      --warn: #ff8a6b;
+      --pending: #ffcc66;
+      --danger: #ff5c6c;
+      --danger-bg: rgba(255, 92, 108, 0.12);
+      --shadow: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+    padding-bottom: 60px;
+  }
+  header.top {
+    padding: 28px clamp(16px, 4vw, 48px) 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header.top h1 {
+    margin: 0 0 4px;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+  }
+  header.top p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px clamp(16px, 4vw, 48px);
+  }
+  section {
+    margin-bottom: 42px;
+  }
+  section h2 {
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  section h2 .tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  section > .desc {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0 0 16px;
+    max-width: 70ch;
+  }
+
+  /* Boss cards */
+  .boss-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .boss-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .boss-card .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .boss-card .head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    outline: none;
+  }
+  select.status {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+  select.status[data-status="activo"] { color: var(--accent-2); border-color: var(--accent-2); }
+  select.status[data-status="pendiente"] { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+  select.status[data-status="rotando"] { color: var(--accent); border-color: var(--accent); }
+
+  .boss-card .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .boss-card [contenteditable] {
+    outline: none;
+    border-radius: 6px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+  }
+  .boss-card [contenteditable]:focus,
+  [contenteditable]:focus {
+    background: var(--panel-2);
+    box-shadow: 0 0 0 2px var(--accent) inset;
+  }
+  .party-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .party-field {
+    font-size: 0.94rem;
+    min-height: 1.3em;
+  }
+  .undefined {
+    color: var(--danger);
+    font-style: italic;
+  }
+  .notes-field {
+    font-size: 0.86rem;
+    color: var(--muted);
+    min-height: 1.3em;
+  }
+  .boss-card.dim { opacity: 0.32; filter: grayscale(0.5); }
+  .boss-card.match { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+  .party-field.line-match {
+    background: var(--panel-2);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+    font-weight: 600;
+  }
+  .party-field.line-hide { display: none; }
+  .party-size {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 8px;
+    border-radius: 999px;
+    margin-right: 7px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .party-size.size-1 { background: rgba(108, 92, 231, 0.15); color: var(--accent); }
+  .party-size.size-2 { background: rgba(0, 184, 148, 0.15); color: var(--accent-2); }
+  .party-size.size-3 { background: rgba(253, 203, 110, 0.2); color: var(--pending); }
+  .party-size.size-4 { background: rgba(225, 112, 85, 0.15); color: var(--warn); }
+  .party-size.size-5 { background: rgba(230, 57, 70, 0.15); color: var(--danger); }
+
+  .day-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .day-chip {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .day-chip:hover { border-color: var(--accent-2); }
+  .day-chip.active { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+  td.day-marked { background: rgba(0, 184, 148, 0.12); }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .diff-badge {
+    height: 22px;
+    width: auto;
+    display: inline-block;
+    flex: none;
+  }
+  .diff-badge-inline {
+    height: 16px;
+    width: auto;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .boss-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex: none;
+    box-shadow: 0 0 0 1px var(--border);
+  }
+
+  /* Person selector */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .chip {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .chip.all { font-weight: 600; }
+  .chip-row.sub {
+    margin: -2px 0 10px 4px;
+    min-height: 0;
+  }
+  .chip.sub {
+    font-size: 0.8rem;
+    padding: 5px 13px;
+    border-style: dashed;
+    color: var(--muted);
+  }
+  .chip.sub.active { background: var(--accent-2); border-color: var(--accent-2); border-style: solid; color: #fff; }
+  #person-summary {
+    color: var(--muted);
+    font-size: 0.86rem;
+    margin: 0;
+    min-height: 1.2em;
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border-bottom: 1px solid var(--border);
+    padding: 9px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel-2);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    position: sticky;
+    top: 0;
+  }
+  tr:last-child td { border-bottom: none; }
+  td[contenteditable] {
+    outline: none;
+    min-width: 90px;
+  }
+  td[contenteditable]:empty:before {
+    content: attr(data-placeholder);
+    color: var(--muted);
+    opacity: 0.6;
+  }
+  td.rowhead {
+    font-weight: 600;
+    background: var(--panel);
+    white-space: nowrap;
+  }
+
+  footer.bar {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 48px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  button#reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  button#reset:hover { border-color: var(--warn); color: var(--warn); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>🗡️ Gestión de Parties · Bosses</h1>
+  <p>Editá cualquier campo con click (roster, parties, notas, horarios) — se guarda solo en este navegador.</p>
+</header>
+
+<main>
+
+  <!-- ROSTER -->
+  <section id="roster">
+    <h2>Roster <span class="tag">Fijo</span></h2>
+    <p class="desc">Personas fijas y sus personajes. Es una lista fija (no se edita desde acá) y de esta misma lista sale todo el resto de la página: los chips de "¿Quién sos?" y con quién se arman las parties.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:22%">Jugador</th><th>Clase(s)</th></tr></thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- BOSSES / PARTIES -->
+  <section id="bosses">
+    <h2>Bosses <span class="tag">Parties actuales</span></h2>
+    <p class="desc">Composición y notas por boss. Click en el estado para cambiarlo.</p>
+
+    <div class="chip-row" id="person-chips"></div>
+    <div class="chip-row sub" id="char-chips"></div>
+    <p id="person-summary">Elegí tu nombre y, si tenés más de un personaje, cuál usás.</p>
+
+    <div class="boss-grid">
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-kalos.png" alt=""><h3>Kalos el Guardián (Ckalos)</h3></div>
+          <select class="status" data-key="boss-1-status"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-1"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Choscar (Demon Slayer), Otaku (Battle Mage)</div>
+          <div class="party-field"><img class="diff-badge-inline" src="badge-extreme.png" alt="Xtreme">Sebas (Bishop), Otaku (Wind Archer), Chepas (Night Lord), Tacos (Adele)</div>
+          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Kanna)</div>
+          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Bucanero)</div>
+          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Edu (Bishop)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-1-notes">Cada pj tiene su propio clear semanal — no se pisan entre sí.</div></div>
+      </article>
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-limbo.png" alt=""><img class="diff-badge" src="badge-hard.png" alt="Hard"><h3>Limbo</h3></div>
+          <select class="status" data-key="boss-2-status"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-2"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer) <span class="undefined">+ Choscar (pendiente de sumar, para blinkear)</span></div>
+          <div class="party-field">Sebas (Kanna), Chepas (Night Lord)</div>
+          <div class="party-field">Sebas (Bucanero)</div>
+          <div class="party-field">Edu (Bishop), Tacos (Adele), Chepas (Shade)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-2-notes">Full cookies, no vestigios hasta armar una party nueva para que Choscar pueda blinkear por cosas.</div></div>
+      </article>
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-kaling.png" alt=""><img class="diff-badge" src="badge-hard.png" alt="Hard"><h3>Kaling</h3></div>
+          <select class="status" data-key="boss-3-status"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-3"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer)</div>
+          <div class="party-field">Sebas (Kanna), Chepas (Night Lord)</div>
+          <div class="party-field">Sebas (Bucanero), Tacos (Adele), Edu (Bishop), Choscar (Demon Slayer)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-3-notes" data-placeholder="Sin notas…"></div></div>
+      </article>
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-seren.png" alt=""><img class="diff-badge" src="badge-extreme.png" alt="Xtreme"><h3>Seren</h3></div>
+          <select class="status" data-key="boss-7-status"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-7"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer)</div>
+          <div class="party-field">Sebas (Kanna), Chepas (Night Lord)</div>
+          <div class="party-field">Sebas (Bucanero), Tacos (Adele), Edu (Bishop), Choscar (Demon Slayer)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-7-notes" data-placeholder="Sin notas…"></div></div>
+      </article>
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-malefic.png" alt=""><img class="diff-badge" src="badge-hard.png" alt="Hard"><h3>Malefic</h3></div>
+          <select class="status" data-key="boss-4-status"><option value="activo" selected>Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-4"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer)</div>
+          <div class="party-field">Sebas (Kanna), Chepas (Night Lord), Tacos (Adele)</div>
+          <div class="party-field">Sebas (Bucanero)</div>
+          <div class="party-field">Edu (Bishop)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-4-notes">Ya no está pendiente: quedaron 4 parties armadas, una por pj.</div></div>
+      </article>
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-adversary.png" alt=""><img class="diff-badge" src="badge-hard.png" alt="Hard"><h3>Adversary</h3></div>
+          <select class="status" data-key="boss-5-status"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-5"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field">Sebas (Bishop), Tacos (Adele)</div>
+          <div class="party-field">Sebas (Kanna), Otaku (Wind Archer)</div>
+          <div class="party-field">Sebas (Bucanero), Chepas (Night Lord)</div>
+          <div class="party-field">Edu (Bishop)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-5-notes">Full cookies, no vestigios hasta armar una party nueva para que Choscar pueda blinkear por cosas.</div></div>
+      </article>
+
+      <article class="boss-card">
+        <div class="head">
+          <div class="title-row"><img class="boss-icon" src="icon-baldrix.png" alt=""><h3>Baldrix</h3></div>
+          <select class="status" data-key="boss-6-status"><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="rotando">Rotando</option></select>
+        </div>
+        <div class="label">Día(s)</div>
+        <div class="day-row" id="day-row-6"></div>
+        <div class="label">Parties</div>
+        <div class="party-list">
+          <div class="party-field">Sebas (Bishop)</div>
+          <div class="party-field"><span class="undefined">Sebas (Kanna) — N/A, falta nivel</span></div>
+          <div class="party-field"><span class="undefined">Sebas (Bucanero) — N/A, falta nivel</span></div>
+          <div class="party-field">Edu (Bishop), Choscar (Demon Slayer), Tacos (Adele)</div>
+        </div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-6-notes" data-placeholder="Sin notas…"></div></div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- HORARIOS / VISTA SEMANAL -->
+  <section id="horarios">
+    <h2>Horarios <span class="tag">Vista semanal</span></h2>
+    <p class="desc">Hora (o "hecho ✅") por boss y día. Dejalo vacío si no está agendado.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:16%">Boss</th>
+            <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
+          </tr>
+        </thead>
+        <tbody id="sched-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="bar">
+  <span>Los cambios se guardan automáticamente en este navegador (localStorage).</span>
+  <button id="reset">Restablecer todo</button>
+</footer>
+
+<script>
+  // --- Roster fijo: única fuente de verdad para el roster y para "¿Quién sos?" ---
+  const ROSTER = [
+    { name: "Otaku",    classes: "Wind Archer, Battle Mage" },
+    { name: "Sebas",    classes: "Bishop, Bucanero, Kanna" },
+    { name: "Choscar",  classes: "Demon Slayer" },
+    { name: "Edu",      classes: "Bishop" },
+    { name: "Tacos",    classes: "Adele" },
+    { name: "Rikar",    classes: "Cadena, Bishop" },
+    { name: "Mechitax", classes: "Hoyung" },
+    { name: "Chepas",   classes: "Night Lord, Shade" },
+  ];
+
+  const bossNames = ["Ckalos", "Limbo", "Kaling", "Seren", "Malefic", "Adversary", "Baldrix"];
+  const days = ["lun","mar","mie","jue","vie","sab","dom"];
+
+  // --- Build roster table (fijo, no editable) ---
+  const rosterBody = document.getElementById("roster-body");
+  ROSTER.forEach(p => {
+    const tr = document.createElement("tr");
+    const tdName = document.createElement("td");
+    tdName.className = "rowhead";
+    tdName.textContent = p.name;
+    const tdClass = document.createElement("td");
+    tdClass.textContent = p.classes;
+    tr.appendChild(tdName);
+    tr.appendChild(tdClass);
+    rosterBody.appendChild(tr);
+  });
+
+  // --- Build weekly schedule table ---
+  const schedBody = document.getElementById("sched-body");
+  bossNames.forEach((name, bi) => {
+    const tr = document.createElement("tr");
+    const head = document.createElement("td");
+    head.className = "rowhead";
+    head.textContent = name;
+    tr.appendChild(head);
+    days.forEach(d => {
+      const td = document.createElement("td");
+      td.contentEditable = "true";
+      td.dataset.key = `sched-${bi}-${d}`;
+      td.dataset.placeholder = "hh:mm";
+      tr.appendChild(td);
+    });
+    schedBody.appendChild(tr);
+  });
+
+  // --- Persistence: generic contenteditable ---
+  const PREFIX = "bp_";
+  function loadAndBind() {
+    document.querySelectorAll("[data-key]").forEach(el => {
+      const key = PREFIX + el.dataset.key;
+      const saved = localStorage.getItem(key);
+      if (saved !== null) {
+        if (el.tagName === "SELECT") el.value = saved;
+        else el.innerHTML = saved;
+      }
+      if (el.tagName === "SELECT") {
+        el.dataset.status = el.value;
+        el.addEventListener("change", () => {
+          localStorage.setItem(key, el.value);
+          el.dataset.status = el.value;
+        });
+      } else {
+        el.addEventListener("blur", () => localStorage.setItem(key, el.innerHTML));
+      }
+    });
+  }
+  loadAndBind();
+
+  // El roster, los títulos y las parties dejaron de ser editables a mano, y
+  // las secciones de prioridad de items y vestigios se sacaron del todo; si
+  // quedó algo guardado en el navegador de una versión anterior, se descarta.
+  Object.keys(localStorage)
+    .filter(k =>
+      k.startsWith(PREFIX + "roster-") ||
+      k.startsWith(PREFIX + "prio-") ||
+      k.startsWith(PREFIX + "vest-") ||
+      /^bp_boss-\d+-p\d+$/.test(k) ||
+      /^bp_boss-\d+-title$/.test(k)
+    )
+    .forEach(k => localStorage.removeItem(k));
+
+  // --- Selector de día por card: se mapea directo a la fila del boss en
+  // "Horarios / Vista semanal". La celda de la tabla es la única fuente de
+  // verdad (si tiene texto, ese día está "activo"), así queda sincronizado
+  // en los dos sentidos: tocar el chip o escribir en la tabla hacen lo mismo.
+  const DAY_LABELS = { lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom" };
+  // Card boss-N -> índice de fila en la tabla de horarios (bossNames de arriba).
+  const BOSS_SCHED_INDEX = { 1: 0, 2: 1, 3: 2, 7: 3, 4: 4, 5: 5, 6: 6 };
+  const SCHED_INDEX_TO_BOSS = { 0: 1, 1: 2, 2: 3, 3: 7, 4: 4, 5: 5, 6: 6 };
+
+  // Cada pj clearea el boss 1 sola vez por semana, así que un boss no puede
+  // tener más de 1 día marcado: al activar uno, se limpian los demás.
+  function enforceSingleDay(schedIndex, keepDay) {
+    days.forEach(d => {
+      if (d === keepDay) return;
+      const otherCell = document.querySelector(`[data-key="sched-${schedIndex}-${d}"]`);
+      if (otherCell && otherCell.textContent.trim() !== "") {
+        otherCell.textContent = "";
+        localStorage.setItem(PREFIX + `sched-${schedIndex}-${d}`, otherCell.innerHTML);
+      }
+    });
+  }
+
+  function renderDayRow(bossNum) {
+    const wrap = document.getElementById(`day-row-${bossNum}`);
+    if (!wrap) return;
+    const schedIndex = BOSS_SCHED_INDEX[bossNum];
+    wrap.innerHTML = "";
+    days.forEach(d => {
+      const cell = document.querySelector(`[data-key="sched-${schedIndex}-${d}"]`);
+      const active = !!(cell && cell.textContent.trim() !== "");
+      if (cell) cell.classList.toggle("day-marked", active);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "day-chip" + (active ? " active" : "");
+      btn.textContent = DAY_LABELS[d];
+      btn.title = active ? "Quitar este día" : "Marcar este día (reemplaza cualquier otro día de este boss)";
+      btn.addEventListener("click", () => {
+        if (!cell) return;
+        const turningOn = cell.textContent.trim() === "";
+        cell.textContent = turningOn ? "✅" : "";
+        localStorage.setItem(PREFIX + `sched-${schedIndex}-${d}`, cell.innerHTML);
+        if (turningOn) enforceSingleDay(schedIndex, d);
+        renderDayRow(bossNum);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  Object.keys(BOSS_SCHED_INDEX).forEach(bossNum => renderDayRow(Number(bossNum)));
+
+  // Si editan la hora directo en la tabla de horarios (en vez de usar los
+  // chips), también se aplica el límite de 1 día por boss, y los chips de
+  // la card correspondiente se refrescan solos.
+  Object.entries(SCHED_INDEX_TO_BOSS).forEach(([schedIndex, bossNum]) => {
+    const idx = Number(schedIndex);
+    days.forEach(d => {
+      const cell = document.querySelector(`[data-key="sched-${idx}-${d}"]`);
+      if (cell) {
+        cell.addEventListener("blur", () => {
+          if (cell.textContent.trim() !== "") enforceSingleDay(idx, d);
+          renderDayRow(bossNum);
+        });
+      }
+    });
+  });
+
+  // Etiqueta automática de tamaño de party (Solo / Dúo / Trío / Cuarteto...),
+  // calculada contando cuántos "Nombre (Clase)" hay en la línea — así nunca
+  // se desincroniza si después se cambia quién va en cada party.
+  const PARTY_SIZE_LABELS = { 1: "Solo", 2: "Dúo", 3: "Trío", 4: "Cuarteto" };
+  function countPartyMembers(html) {
+    // Las menciones "pendientes" (ej. "+ Choscar (pendiente de sumar)") o
+    // "N/A" no cuentan como miembro real de la party.
+    const withoutPending = html.replace(/<span class="undefined">[\s\S]*?<\/span>/g, "");
+    const plain = withoutPending.replace(/<[^>]+>/g, " ");
+    const found = plain.match(/[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s*\(/g);
+    return found ? found.length : 0;
+  }
+
+  // Guarda el texto/HTML original de cada línea de party (ya no se edita,
+  // así que esto no cambia solo) para poder recortar el propio nombre cuando
+  // se filtra por esa persona, y restaurar la línea completa al des-filtrar.
+  // La etiqueta de tamaño se calcula UNA vez y queda incluida en ese "original".
+  document.querySelectorAll(".party-field").forEach(line => {
+    const raw = line.innerHTML;
+    const count = countPartyMembers(raw);
+    const label = PARTY_SIZE_LABELS[count] || (count > 4 ? `Party de ${count}` : "");
+    const badge = label ? `<span class="party-size size-${Math.min(count, 5)}">${label}</span>` : "";
+    const full = badge + raw;
+    line.innerHTML = full;
+    line.dataset.full = full;
+  });
+
+  function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // Saca la mención "Nombre (Clase)" de la propia persona filtrada de una línea,
+  // ya que es redundante: si filtraste por Choscar, no hace falta repetir
+  // "Choscar (Demon Slayer)" en cada card donde aparece.
+  function stripOwnMention(html, person, cls) {
+    const namePat = escapeRegExp(person);
+    const re = cls
+      ? new RegExp(namePat + "\\s*\\(\\s*" + escapeRegExp(cls) + "[^)]*\\)", "i")
+      : new RegExp(namePat + "\\s*\\([^)]*\\)", "i");
+    let result = html.replace(re, "");
+    result = result
+      .replace(/,\s*,/g, ",")           // doble coma seguida
+      .replace(/,\s*</g, " <")          // coma justo antes de una etiqueta → un espacio
+      .replace(/>\s*,\s*/g, "> ")       // coma justo después de una etiqueta → un espacio
+      .replace(/,\s*(—|-)/g, " $1")     // coma justo antes de un guion suelto ("— dúo") → un espacio
+      .replace(/^\s*,\s*/, "")          // coma al principio de todo
+      .replace(/,\s*$/, "")             // coma al final de todo
+      .replace(/>\s+/g, ">")            // espacio colgado justo al abrir una etiqueta
+      .replace(/\s{2,}/g, " ")          // colapsar espacios múltiples
+      .trim();
+    const plainCheck = result.replace(/<[^>]+>/g, "").trim();
+    return plainCheck ? result : html; // si no quedó nada, mejor mostrar la línea entera
+  }
+
+  // --- Selector en dos pasos: primero la persona, después (si tiene
+  // más de un pj) el personaje puntual. Cada persona puede tener varios pj. ---
+  function getPersonClassList(name) {
+    const p = ROSTER.find(r => r.name === name);
+    if (!p) return [];
+    return p.classes.split(",").map(c => c.trim()).filter(Boolean);
+  }
+
+  function makeChip(label, active, extraClass, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (extraClass ? " " + extraClass : "") + (active ? " active" : "");
+    btn.textContent = label;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  const personChipWrap = document.getElementById("person-chips");
+  const charChipWrap = document.getElementById("char-chips");
+
+  // Persiste la selección (persona + pj puntual) para que al recargar la
+  // página quede parado donde lo dejaste (ej. Otaku > Wind Archer).
+  function setPersonSelection(name) {
+    personChipWrap.dataset.selected = name;
+    localStorage.setItem(PREFIX + "selected-person", name);
+  }
+  function setClassSelection(cls) {
+    charChipWrap.dataset.selected = cls;
+    localStorage.setItem(PREFIX + "selected-class", cls);
+  }
+
+  personChipWrap.dataset.selected = localStorage.getItem(PREFIX + "selected-person") || "";
+  charChipWrap.dataset.selected = localStorage.getItem(PREFIX + "selected-class") || "";
+  // Si la persona guardada ya no existe en el roster (se borró/cambió), se descarta.
+  if (personChipWrap.dataset.selected && !ROSTER.some(p => p.name === personChipWrap.dataset.selected)) {
+    setPersonSelection("");
+    setClassSelection("");
+  }
+
+  function renderPersonChips() {
+    const selected = personChipWrap.dataset.selected || "";
+    personChipWrap.innerHTML = "";
+
+    personChipWrap.appendChild(makeChip("Todos", selected === "", "all", () => {
+      setPersonSelection("");
+      setClassSelection("");
+      renderPersonChips();
+      renderCharChips();
+      applyFilter();
+    }));
+
+    ROSTER.forEach(p => {
+      personChipWrap.appendChild(makeChip(p.name, p.name === selected, "", () => {
+        const already = personChipWrap.dataset.selected === p.name;
+        setPersonSelection(already ? "" : p.name);
+        setClassSelection(""); // al cambiar de persona, se resetea el sub-pj
+        renderPersonChips();
+        renderCharChips();
+        applyFilter();
+      }));
+    });
+  }
+
+  function renderCharChips() {
+    const person = personChipWrap.dataset.selected;
+    charChipWrap.innerHTML = "";
+    if (!person) return;
+
+    const classList = getPersonClassList(person);
+    if (classList.length <= 1) return; // 1 solo pj: no hay nada que sub-elegir
+
+    const selectedClass = charChipWrap.dataset.selected || "";
+
+    charChipWrap.appendChild(makeChip("Todos sus pj", selectedClass === "", "sub", () => {
+      setClassSelection("");
+      renderCharChips();
+      applyFilter();
+    }));
+
+    classList.forEach(cls => {
+      charChipWrap.appendChild(makeChip(cls, cls === selectedClass, "sub", () => {
+        setClassSelection(charChipWrap.dataset.selected === cls ? "" : cls);
+        renderCharChips();
+        applyFilter();
+      }));
+    });
+  }
+
+  function applyFilter() {
+    const person = personChipWrap.dataset.selected;
+    const cls = charChipWrap.dataset.selected;
+    const summary = document.getElementById("person-summary");
+    const cards = document.querySelectorAll(".boss-card");
+
+    if (!person) {
+      cards.forEach(c => {
+        c.classList.remove("dim", "match");
+        c.querySelectorAll(".party-field").forEach(line => {
+          line.classList.remove("line-match", "line-hide");
+          line.innerHTML = line.dataset.full; // restaurar por si quedó recortada
+        });
+      });
+      summary.textContent = "Elegí tu nombre y, si tenés más de un personaje, cuál usás.";
+      return;
+    }
+
+    const personClasses = getPersonClassList(person);
+    // Si sabemos con certeza qué pj es (persona de 1 sola clase, o ya elegiste
+    // el sub-chip), recortamos su propia mención por redundante. Si es multi-clase
+    // y estás en "Todos sus pj", la dejamos completa porque ahí sí conviene ver cuál.
+    const stripCls = cls || (personClasses.length === 1 ? personClasses[0] : null);
+
+    let matches = 0;
+    cards.forEach(c => {
+      const lines = c.querySelectorAll(".party-field");
+      let cardHasMatch = false;
+      lines.forEach(line => {
+        const fullHtml = line.dataset.full;
+        const text = fullHtml.replace(/<[^>]+>/g, " ").toLowerCase();
+        const p = person.toLowerCase();
+        // Sin pj puntual: alcanza con que el nombre aparezca en la línea.
+        // Con pj puntual: exigimos "nombre (clase" pegado, para no confundir
+        // a esa persona con otra que comparta línea y clase (ej. "Sebas (Bucanero),
+        // Edu (Bishop)" no debe contar como "Sebas Bishop").
+        const isLineMatch = cls
+          ? (text.includes(`${p} (${cls.toLowerCase()}`) || text.includes(`${p}(${cls.toLowerCase()}`))
+          : text.includes(p);
+        line.classList.toggle("line-match", isLineMatch);
+        line.classList.toggle("line-hide", !isLineMatch); // solo se ve la línea que matchea
+        line.innerHTML = (isLineMatch && stripCls) ? stripOwnMention(fullHtml, person, stripCls) : fullHtml;
+        if (isLineMatch) cardHasMatch = true;
+      });
+      c.classList.toggle("match", cardHasMatch);
+      c.classList.toggle("dim", !cardHasMatch);
+      if (cardHasMatch) matches++;
+    });
+
+    const label = cls ? `${person} · ${cls}` : person;
+    summary.textContent = matches
+      ? `${label} está fijo en ${matches} part${matches === 1 ? "y" : "ys"}.`
+      : `${label} todavía no tiene parties asignadas.`;
+
+    document.getElementById("bosses").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  renderPersonChips();
+  renderCharChips();
+  applyFilter();
+
+  // --- Marcar en rojo las parties sin definir ---
+  // Las parties ya no son editables (son fijas), así que esto corre una sola vez.
+  function refreshUndefined() {
+    document.querySelectorAll(".party-field").forEach(el => {
+      const t = el.textContent.trim();
+      const isUndefined = t === "" || /^-+/.test(t);
+      el.classList.toggle("undefined", isUndefined);
+    });
+  }
+  refreshUndefined();
+
+  document.getElementById("reset").addEventListener("click", () => {
+    if (!confirm("¿Restablecer todos los datos a los valores por defecto? Esto borra tus cambios guardados.")) return;
+    Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  });
+</script>
+
+</body>
+</html>
