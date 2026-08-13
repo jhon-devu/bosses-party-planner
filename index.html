@@ -4,8 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestión de Parties · Bosses</title>
+<script>
+  // Aplica el tema guardado ANTES de pintar, para que no haya flash.
+  // Por defecto es oscuro (no se mira el tema del sistema operativo).
+  (function () {
+    var saved = localStorage.getItem("bp_theme");
+    document.documentElement.dataset.theme = saved === "light" ? "light" : "dark";
+  })();
+</script>
 <style>
+  /* Tema oscuro por defecto — NO depende del tema del sistema operativo.
+     El switch de arriba a la derecha guarda la preferencia en localStorage
+     y se aplica vía [data-theme] en <html> (ver script inline en <head>). */
   :root {
+    --bg: #14151c;
+    --panel: #1c1e28;
+    --panel-2: #23252f;
+    --text: #eceef4;
+    --muted: #9aa0b4;
+    --border: #2e3140;
+    --accent: #9c8cff;
+    --accent-2: #2ed9a8;
+    --warn: #ff8a6b;
+    --pending: #ffcc66;
+    --danger: #ff5c6c;
+    --danger-bg: rgba(255, 92, 108, 0.12);
+    --shadow: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3);
+  }
+  :root[data-theme="light"] {
     --bg: #f4f5f8;
     --panel: #ffffff;
     --panel-2: #eef0f5;
@@ -19,23 +45,6 @@
     --danger: #e63946;
     --danger-bg: rgba(230, 57, 70, 0.1);
     --shadow: 0 1px 3px rgba(20,20,30,0.08), 0 1px 2px rgba(20,20,30,0.06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14151c;
-      --panel: #1c1e28;
-      --panel-2: #23252f;
-      --text: #eceef4;
-      --muted: #9aa0b4;
-      --border: #2e3140;
-      --accent: #9c8cff;
-      --accent-2: #2ed9a8;
-      --warn: #ff8a6b;
-      --pending: #ffcc66;
-      --danger: #ff5c6c;
-      --danger-bg: rgba(255, 92, 108, 0.12);
-      --shadow: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3);
-    }
   }
   * { box-sizing: border-box; }
   body {
@@ -51,6 +60,13 @@
     border-bottom: 1px solid var(--border);
     background: var(--panel);
   }
+  .top-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
   header.top h1 {
     margin: 0 0 4px;
     font-size: 1.6rem;
@@ -61,6 +77,61 @@
     color: var(--muted);
     font-size: 0.92rem;
   }
+  .top-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+  }
+
+  /* Reloj de reset (arriba a la derecha) */
+  .reset-timer {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    padding: 7px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+    cursor: default;
+  }
+  .reset-timer strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .reset-timer.after strong { color: var(--accent-2); }
+
+  /* Switch de tema oscuro/claro */
+  .theme-toggle {
+    position: relative;
+    width: 52px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    padding: 0;
+    cursor: pointer;
+    flex: none;
+  }
+  .theme-toggle .knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    transition: transform .18s ease;
+  }
+  :root[data-theme="light"] .theme-toggle .knob { transform: translateX(24px); }
   main {
     max-width: 1180px;
     margin: 0 auto;
@@ -345,8 +416,18 @@
 <body>
 
 <header class="top">
-  <h1>🗡️ Gestión de Parties · Bosses</h1>
-  <p>Editá cualquier campo con click (roster, parties, notas, horarios) — se guarda solo en este navegador.</p>
+  <div class="top-inner">
+    <div>
+      <h1>🗡️ Gestión de Parties · Bosses</h1>
+      <p>Editá cualquier campo con click (roster, parties, notas, horarios) — se guarda solo en este navegador.</p>
+    </div>
+    <div class="top-controls">
+      <span class="reset-timer" id="reset-timer" title="Reset diario a las 7:00 pm, hora Colombia"></span>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
+        <span class="knob" id="theme-knob">🌙</span>
+      </button>
+    </div>
+  </div>
 </header>
 
 <main>
@@ -889,6 +970,58 @@
     Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k));
     location.reload();
   });
+
+  // --- Switch de tema oscuro/claro (manual, no sigue el tema del SO) ---
+  // El tema ya se aplicó al <html> en un script del <head> para evitar el
+  // flash; acá solo sincronizamos el ícono y cableamos el click.
+  const THEME_KEY = "bp_theme";
+  const themeToggle = document.getElementById("theme-toggle");
+  const themeKnob = document.getElementById("theme-knob");
+  function reflectTheme() {
+    const isLight = document.documentElement.dataset.theme === "light";
+    themeKnob.textContent = isLight ? "☀️" : "🌙";
+    themeToggle.setAttribute("aria-pressed", String(isLight));
+  }
+  reflectTheme();
+  themeToggle.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem(THEME_KEY, next);
+    reflectTheme();
+  });
+
+  // --- Reloj de reset (arriba a la derecha) ---
+  // El reset de los bosses es todos los días a las 7:00 pm hora Colombia.
+  // Colombia (America/Bogota) está fijo en UTC-5 todo el año (sin horario
+  // de verano), así que alcanza con restar 5h al UTC actual para tener la
+  // hora de pared de Colombia — no hace falta Intl/timezone.
+  // Antes de las 7pm: cuenta regresiva ("faltan Xh Ym para el reset").
+  // Después de las 7pm (mismo día): cuenta para arriba ("+1", "+2"...) las
+  // horas que pasaron desde ese reset. A la medianoche vuelve a haber
+  // cuenta regresiva para el reset del día siguiente.
+  const RESET_HOUR_COL = 19;
+  const resetTimerEl = document.getElementById("reset-timer");
+  function updateResetTimer() {
+    if (!resetTimerEl) return;
+    const bogotaMs = Date.now() - 5 * 60 * 60 * 1000; // "hora de pared" de Colombia, expresada como ms UTC
+    const bogota = new Date(bogotaMs);
+    const todayResetMs = Date.UTC(bogota.getUTCFullYear(), bogota.getUTCMonth(), bogota.getUTCDate(), RESET_HOUR_COL, 0, 0);
+    const diff = todayResetMs - bogotaMs;
+
+    resetTimerEl.classList.toggle("after", diff <= 0);
+
+    if (diff > 0) {
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      resetTimerEl.innerHTML = `⏳ Faltan <strong>${h}h ${String(m).padStart(2, "0")}m</strong> para el reset`;
+    } else {
+      const elapsed = -diff;
+      const hoursSince = Math.floor(elapsed / 3600000) + 1; // 19:00–19:59 => +1, 20:00–20:59 => +2, etc.
+      resetTimerEl.innerHTML = `🔄 <strong>+${hoursSince}</strong> desde el reset`;
+    }
+  }
+  updateResetTimer();
+  setInterval(updateResetTimer, 15000);
 </script>
 
 </body>
