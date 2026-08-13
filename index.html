@@ -30,6 +30,9 @@
     --danger: #ff5c6c;
     --danger-bg: rgba(255, 92, 108, 0.12);
     --shadow: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3);
+    /* Paleta categórica para identificar a cada persona (orden fijo, no rota) */
+    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
+    --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767;
   }
   :root[data-theme="light"] {
     --bg: #f4f5f8;
@@ -45,6 +48,8 @@
     --danger: #e63946;
     --danger-bg: rgba(230, 57, 70, 0.1);
     --shadow: 0 1px 3px rgba(20,20,30,0.08), 0 1px 2px rgba(20,20,30,0.06);
+    --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
+    --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #4a3aa7; --cat-8: #e34948;
   }
   * { box-sizing: border-box; }
   body {
@@ -307,37 +312,137 @@
     box-shadow: 0 0 0 1px var(--border);
   }
 
-  /* Person selector */
-  .chip-row {
+  /* Person selector — tira de avatares, arrastrable con el mouse, con
+     snap por tarjeta. Cada persona tiene un color fijo (identidad), y el
+     sub-selector de personaje toma prestado ese mismo color. */
+  .person-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 2px 14px;
+    margin-bottom: 2px;
+    scroll-snap-type: x proximity;
+    cursor: grab;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .person-scroll::-webkit-scrollbar { display: none; }
+  .person-scroll.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+
+  .person-card {
+    scroll-snap-align: start;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    width: 76px;
+    padding: 10px 4px 9px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .person-card:hover { transform: translateY(-2px); border-color: var(--pc-color, var(--accent)); }
+  .person-card.active {
+    border-color: var(--pc-color, var(--accent));
+    box-shadow: 0 6px 16px -6px var(--pc-color, var(--accent));
+    transform: translateY(-2px);
+  }
+  .person-card .avatar {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    background: var(--pc-color, var(--muted));
+    box-shadow: 0 0 0 3px var(--panel), 0 0 0 4px var(--border);
+    transition: box-shadow .15s ease;
+  }
+  .person-card.active .avatar {
+    box-shadow: 0 0 0 3px var(--panel), 0 0 0 4px var(--pc-color, var(--accent));
+  }
+  .person-card .check {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--pc-color, var(--accent));
+    color: #fff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--panel);
+    display: none;
+  }
+  .person-card.active .check { display: block; }
+  .person-card .pname {
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .person-card .pmeta {
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .person-card.active .pmeta { color: var(--pc-color, var(--accent)); }
+
+  /* Sub-selector de personaje: aparece "prendido" al color de la persona elegida */
+  .char-picker {
+    --pc-color: var(--accent-2);
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 12px;
+    margin: -4px 0 14px 2px;
+    background: var(--panel-2);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    animation: char-in .18s ease;
   }
-  .chip {
+  @keyframes char-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .char-picker .char-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-right: 2px;
+  }
+  .char-pill {
     border: 1px solid var(--border);
     background: var(--panel);
     color: var(--text);
     border-radius: 999px;
-    padding: 7px 16px;
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition: border-color .15s ease, background .15s ease, color .15s ease;
-  }
-  .chip:hover { border-color: var(--accent); }
-  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  .chip.all { font-weight: 600; }
-  .chip-row.sub {
-    margin: -2px 0 10px 4px;
-    min-height: 0;
-  }
-  .chip.sub {
+    padding: 5px 14px;
     font-size: 0.8rem;
-    padding: 5px 13px;
-    border-style: dashed;
-    color: var(--muted);
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease;
   }
-  .chip.sub.active { background: var(--accent-2); border-color: var(--accent-2); border-style: solid; color: #fff; }
+  .char-pill:hover { border-color: var(--pc-color); transform: translateY(-1px); }
+  .char-pill.active { background: var(--pc-color); border-color: var(--pc-color); color: #fff; font-weight: 600; }
   #person-summary {
     color: var(--muted);
     font-size: 0.86rem;
@@ -449,8 +554,8 @@
     <h2>Bosses <span class="tag">Parties actuales</span></h2>
     <p class="desc">Composición y notas por boss. Click en el estado para cambiarlo.</p>
 
-    <div class="chip-row" id="person-chips"></div>
-    <div class="chip-row sub" id="char-chips"></div>
+    <div class="person-scroll" id="person-chips"></div>
+    <div id="char-chips"></div>
     <p id="person-summary">Elegí tu nombre y, si tenés más de un personaje, cuál usás.</p>
 
     <div class="boss-grid">
@@ -813,17 +918,64 @@
     return p.classes.split(",").map(c => c.trim()).filter(Boolean);
   }
 
-  function makeChip(label, active, extraClass, onClick) {
+  // Color fijo por persona (identidad, no rota): el índice en ROSTER
+  // determina el slot de la paleta categórica de 8 colores del tema.
+  function colorForPerson(name) {
+    const i = ROSTER.findIndex(p => p.name === name);
+    if (i < 0) return "var(--accent)";
+    return `var(--cat-${(i % 8) + 1})`;
+  }
+
+  function makePersonCard(label, active, color, initial, meta, onClick) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "chip" + (extraClass ? " " + extraClass : "") + (active ? " active" : "");
+    btn.className = "person-card" + (active ? " active" : "");
+    btn.style.setProperty("--pc-color", color);
+    btn.innerHTML = `
+      <span class="avatar">${initial}<span class="check">✓</span></span>
+      <span class="pname">${label}</span>
+      ${meta ? `<span class="pmeta">${meta}</span>` : ""}
+    `;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  function makeCharPill(label, active, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "char-pill" + (active ? " active" : "");
     btn.textContent = label;
     btn.addEventListener("click", onClick);
     return btn;
   }
 
+  // Arrastre con mouse para scrollear la tira de avatares (como un carrusel).
+  // El touch ya scrollea nativo; esto solo suma el drag de mouse en desktop,
+  // y evita que un arrastre dispare el click de la tarjeta que quedó debajo.
+  function enableDragScroll(el) {
+    let down = false, moved = false, startX = 0, startScroll = 0;
+    el.addEventListener("mousedown", e => {
+      down = true; moved = false;
+      startX = e.pageX;
+      startScroll = el.scrollLeft;
+      el.classList.add("dragging");
+    });
+    window.addEventListener("mouseup", () => { down = false; el.classList.remove("dragging"); });
+    el.addEventListener("mouseleave", () => { down = false; el.classList.remove("dragging"); });
+    el.addEventListener("mousemove", e => {
+      if (!down) return;
+      const dx = e.pageX - startX;
+      if (Math.abs(dx) > 5) moved = true;
+      el.scrollLeft = startScroll - dx;
+    });
+    el.addEventListener("click", e => {
+      if (moved) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
+
   const personChipWrap = document.getElementById("person-chips");
   const charChipWrap = document.getElementById("char-chips");
+  enableDragScroll(personChipWrap);
 
   // Persiste la selección (persona + pj puntual) para que al recargar la
   // página quede parado donde lo dejaste (ej. Otaku > Wind Archer).
@@ -848,7 +1000,7 @@
     const selected = personChipWrap.dataset.selected || "";
     personChipWrap.innerHTML = "";
 
-    personChipWrap.appendChild(makeChip("Todos", selected === "", "all", () => {
+    personChipWrap.appendChild(makePersonCard("Todos", selected === "", "var(--accent)", "👥", "", () => {
       setPersonSelection("");
       setClassSelection("");
       renderPersonChips();
@@ -857,14 +1009,23 @@
     }));
 
     ROSTER.forEach(p => {
-      personChipWrap.appendChild(makeChip(p.name, p.name === selected, "", () => {
-        const already = personChipWrap.dataset.selected === p.name;
-        setPersonSelection(already ? "" : p.name);
-        setClassSelection(""); // al cambiar de persona, se resetea el sub-pj
-        renderPersonChips();
-        renderCharChips();
-        applyFilter();
-      }));
+      const classList = getPersonClassList(p.name);
+      const meta = classList.length > 1 ? `${classList.length} pj` : "";
+      personChipWrap.appendChild(makePersonCard(
+        p.name,
+        p.name === selected,
+        colorForPerson(p.name),
+        p.name.charAt(0).toUpperCase(),
+        meta,
+        () => {
+          const already = personChipWrap.dataset.selected === p.name;
+          setPersonSelection(already ? "" : p.name);
+          setClassSelection(""); // al cambiar de persona, se resetea el sub-pj
+          renderPersonChips();
+          renderCharChips();
+          applyFilter();
+        }
+      ));
     });
   }
 
@@ -878,19 +1039,30 @@
 
     const selectedClass = charChipWrap.dataset.selected || "";
 
-    charChipWrap.appendChild(makeChip("Todos sus pj", selectedClass === "", "sub", () => {
+    const picker = document.createElement("div");
+    picker.className = "char-picker";
+    picker.style.setProperty("--pc-color", colorForPerson(person));
+
+    const label = document.createElement("span");
+    label.className = "char-label";
+    label.textContent = "Personaje";
+    picker.appendChild(label);
+
+    picker.appendChild(makeCharPill("Todos sus pj", selectedClass === "", () => {
       setClassSelection("");
       renderCharChips();
       applyFilter();
     }));
 
     classList.forEach(cls => {
-      charChipWrap.appendChild(makeChip(cls, cls === selectedClass, "sub", () => {
+      picker.appendChild(makeCharPill(cls, cls === selectedClass, () => {
         setClassSelection(charChipWrap.dataset.selected === cls ? "" : cls);
         renderCharChips();
         applyFilter();
       }));
     });
+
+    charChipWrap.appendChild(picker);
   }
 
   function applyFilter() {
