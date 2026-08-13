@@ -166,7 +166,8 @@ foreach ($name in $cells.Keys) {
   $y0 = $rowY[$c.row]; $y1 = $rowY[$c.row + 1]
   $r = New-Object System.Drawing.Rectangle($x0, $y0, ($x1 - $x0), ($y1 - $y0))
   $cellBmp = $src.Clone($r, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-  $result = Get-BgRemoved $cellBmp 30
+  $tol = if ($name -eq "kaling") { 8 } else { 30 }
+  $result = Get-BgRemoved $cellBmp $tol
   $outPath = "C:\Users\USER\bosses-party-planner\icon-$name.png"
   $result.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
   Write-Output "$name -> $outPath ($($result.Width)x$($result.Height))"
