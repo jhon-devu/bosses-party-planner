@@ -522,6 +522,11 @@
     background: var(--panel);
     white-space: nowrap;
   }
+  tr.no-party td {
+    text-decoration: line-through;
+    color: var(--muted);
+    opacity: 0.6;
+  }
 
   footer.bar {
     max-width: 1180px;
@@ -762,6 +767,7 @@
     tdClass.textContent = p.classes;
     tr.appendChild(tdName);
     tr.appendChild(tdClass);
+    tr.dataset.person = p.name;
     rosterBody.appendChild(tr);
   });
 
@@ -993,6 +999,15 @@
     line.dataset.full = full;
     const note = line.querySelector(".party-note");
     if (note) { renderNoteTags(note); renderVest(line, note); }
+  });
+
+  // --- Roster: tachar a quien no está en ninguna party ---
+  // Se calcula de las parties, así que si alguien vuelve a una se destacha solo.
+  const partyText = [...document.querySelectorAll(".party-members")].map(m => m.textContent).join(" ");
+  rosterBody.querySelectorAll("tr").forEach(tr => {
+    const inParty = partyText.includes(`${tr.dataset.person} (`);
+    tr.classList.toggle("no-party", !inParty);
+    if (!inParty) tr.title = "Sin parties por ahora";
   });
 
   function escapeRegExp(s) {
