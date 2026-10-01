@@ -109,8 +109,8 @@
   }
   .reset-timer.after strong { color: var(--accent-2); }
   .top-controls { flex-wrap: wrap; justify-content: flex-end; }
-  .note-week { font-weight: 700; }
-  .note-tag.note-old { opacity: 0.5; text-decoration: line-through; }
+  .note-tag.note-vest strong { color: var(--text); }
+  .note-tag .vest-next { color: var(--muted); }
 
   /* Switch de tema oscuro/claro */
   .theme-toggle {
@@ -598,11 +598,11 @@
         <div class="day-row" id="day-row-1"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members"><img class="diff-badge-inline" src="badge-extreme.png" alt="Xtreme">Sebas (Bishop), Franklin (Wind Archer), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note" data-week="2026-09-30">Full blink - Vestigios dobles - Esta semana le toca a Sebas Choscar</span></div>
-          <div class="party-field"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Franklin (Sia), Sebas (Kanna), Choscar (Erel)</span><span class="party-note">Full blink</span></div>
-          <div class="party-field"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Franklin (Battle Mage), Danna (Angelic Buster)</span><span class="party-note">Danna Full prio</span></div>
-          <div class="party-field"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Erel), Franklin (Lynn), Tacos (Hayato)</span><span class="party-note">Full blink</span></div>
-          <div class="party-field"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Danna (Lynn), Mechitax (Hoyoung), Sushimitzu (Night Walker)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas+Choscar > Franklin+Tacos"><span class="party-members"><img class="diff-badge-inline" src="badge-extreme.png" alt="Xtreme">Sebas (Bishop), Franklin (Wind Archer), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Franklin (Sia), Sebas (Kanna), Choscar (Erel)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Franklin (Battle Mage), Danna (Angelic Buster)</span><span class="party-note">Danna Full prio</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Erel), Franklin (Lynn), Tacos (Hayato)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Danna (Lynn), Mechitax (Hoyoung), Sushimitzu (Night Walker)</span><span class="party-note">Full blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-1-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -616,9 +616,9 @@
         <div class="day-row" id="day-row-2"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note" data-week="2026-09-30">Prioridad anillo limbo Sebas - Vestigios dobles Sebas esta semana</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Kanna), Rikar (Bishop), Mechitax (Hoyoung)</span><span class="party-note" data-week="2026-09-30">Prioridad Anillo limbo Sebas - Sebas le toca doble vestigio esta semana</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Erel), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Prioridad Anillo limbo Choscar - Vestigios 1 cada 1 - Grindstone lv 6 blink Choscar y Tacos</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Prioridad anillo limbo Sebas</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Rikar"><span class="party-members">Sebas (Kanna), Rikar (Bishop), Mechitax (Hoyoung)</span><span class="party-note">Prioridad Anillo limbo Sebas</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Erel), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Prioridad Anillo limbo Choscar - Grindstone lv 6 blink Choscar y Tacos</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-2-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -632,10 +632,10 @@
         <div class="day-row" id="day-row-3"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members">Sebas (Kanna), Danna (Angelic Buster)</span><span class="party-note">Duo blink</span></div>
-          <div class="party-field"><span class="party-members">Franklin (Wind Archer), Sebas (Bishop), Tacos (Hayato), Choscar (Erel)</span><span class="party-note">Duo blink Sebas y Franklin</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Bucanero), Danna (Lynn), Crunchyroll (Night Walker), Sushimitzu (Night Walker), Franklin (Battle Mage), Mechitax (Hoyoung)</span><span class="party-note">Full blink</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Erel), Franklin (Sia), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Duo blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Danna"><span class="party-members">Sebas (Kanna), Danna (Angelic Buster)</span><span class="party-note">Duo blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Franklin (Wind Archer), Sebas (Bishop), Tacos (Hayato), Choscar (Erel)</span><span class="party-note">Duo blink Sebas y Franklin</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno, los que sobran blink"><span class="party-members">Sebas (Bucanero), Danna (Lynn), Crunchyroll (Night Walker), Sushimitzu (Night Walker), Franklin (Battle Mage), Mechitax (Hoyoung)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="rot:Choscar > Tacos"><span class="party-members">Sebas (Erel), Franklin (Sia), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Duo blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-3-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -649,11 +649,11 @@
         <div class="day-row" id="day-row-7"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members">Sebas (Bucanero), Franklin (Battle Mage), Sushimitzu (Night Walker)</span><span class="party-note">Full blink</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Full blink</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Kanna), Rikar (Bishop)</span><span class="party-note">Prioridad hammer Sebas, segundo Rikar (Bishop)</span></div>
-          <div class="party-field"><span class="party-members">Franklin (Sia), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Tacos y Choscar blinkean por hammer, y la mulita va por emblema</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Erel), Danna (Lynn), Mechitax (Hoyoung), Rikar (Cadena)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:2 vestigios para cada uno"><span class="party-members">Sebas (Bucanero), Franklin (Battle Mage), Sushimitzu (Night Walker)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:3 vestigios para cada uno"><span class="party-members">Sebas (Kanna), Rikar (Bishop)</span><span class="party-note">Prioridad hammer Sebas, segundo Rikar (Bishop)</span></div>
+          <div class="party-field" data-vest="fijo:3 vestigios para cada uno, solo Tacos y Choscar"><span class="party-members">Franklin (Sia), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Tacos y Choscar blinkean por hammer, y la mulita va por emblema</span></div>
+          <div class="party-field" data-vest="fijo:2 vestigios cada uno, los que sobran blink"><span class="party-members">Sebas (Erel), Danna (Lynn), Mechitax (Hoyoung), Rikar (Cadena)</span><span class="party-note">Full blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-7-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -667,9 +667,9 @@
         <div class="day-row" id="day-row-4"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note" data-week="2026-09-30">Duo blink anillo malefic - Vestigios dobles esta semana a Sebas</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Kanna), Rikar (Bishop)</span><span class="party-note" data-week="2026-09-30">Prioridad anillo malefic Sebas - Vestigios dobles Sebas esta semana</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Bucanero), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Duo blink anillo malefic</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Rikar"><span class="party-members">Sebas (Kanna), Rikar (Bishop)</span><span class="party-note">Prioridad anillo malefic Sebas</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Bucanero), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-4-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -683,10 +683,10 @@
         <div class="day-row" id="day-row-5"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer), Choscar (Erel)</span><span class="party-note" data-week="2026-09-30">Prioridad medalla Sebas - Vestigios dobles esta semana</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Erel), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Prioridad medalla Sebas - Choscar segunda medalla - 1 vestigio cada 1</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Kanna), Franklin (Sia), Mechitax (Hoyoung)</span><span class="party-note" data-week="2026-09-30">Prioridad Sebas Medalla - Vestigios doble esta semana le toca a Sebas</span></div>
-          <div class="party-field"><span class="party-members">Sebas (Bucanero), Franklin (Battle Mage), Danna (Angelic Buster)</span><span class="party-note">Duo blink Danna y Sebas medalla y grindstone - Vestigios 1 cada 1</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer), Choscar (Erel)</span><span class="party-note">Prioridad medalla Sebas</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Erel), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Prioridad medalla Sebas - Choscar segunda medalla</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin (Sia)"><span class="party-members">Sebas (Kanna), Franklin (Sia), Mechitax (Hoyoung)</span><span class="party-note">Prioridad Sebas Medalla</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Bucanero), Franklin (Battle Mage), Danna (Angelic Buster)</span><span class="party-note">Duo blink Danna y Sebas medalla y grindstone</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-5-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -700,7 +700,7 @@
         <div class="day-row" id="day-row-6"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><span class="party-members">Danna (Angelic Buster), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Danna (Angelic Buster), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-6-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -903,7 +903,7 @@
   // y cada pedazo se muestra como etiqueta según de qué habla, para ver de un
   // vistazo cómo vamos con las prioridades de items y los vestigios.
   function noteKind(text) {
-    if (/vestigio|le toca/i.test(text)) return "vest";
+    if (/vestigio/i.test(text)) return "vest";
     if (/prio|medalla|anillo|hammer|emblema|grindstone/i.test(text)) return "item";
     if (/blink/i.test(text)) return "blink";
     return "misc";
@@ -930,35 +930,52 @@
   }
   const WEEK_START = currentWeekStart();
 
-  // Si la nota se escribió para una semana puntual (data-week), "esta semana"
-  // se reemplaza por esa fecha y se marca si es la actual, una pasada o una futura.
-  function weekLabel(week) {
-    if (week === WEEK_START) return `esta semana (mié ${shortDate(week)})`;
-    if (week === addDays(WEEK_START, -7)) return `la semana pasada (mié ${shortDate(week)})`;
-    if (week === addDays(WEEK_START, 7)) return `la semana que viene (mié ${shortDate(week)})`;
-    return `la semana del mié ${shortDate(week)}`;
-  }
   function renderNoteTags(el) {
-    const week = el.dataset.week;
     const parts = el.textContent.split(/\s+-\s+/).map(s => s.trim()).filter(Boolean);
     el.textContent = "";
     parts.forEach(p => {
       const kind = noteKind(p);
       const tag = document.createElement("span");
       tag.className = `note-tag note-${kind}`;
-      tag.append(`${NOTE_ICONS[kind]} `);
-      if (week && /esta semana/i.test(p)) {
-        const [before, after] = p.split(/esta semana/i);
-        const strong = document.createElement("span");
-        strong.className = "note-week";
-        strong.textContent = weekLabel(week);
-        tag.append(before, strong, after);
-        if (week < WEEK_START) tag.classList.add("note-old"); // ya venció
-      } else {
-        tag.append(p);
-      }
+      tag.textContent = `${NOTE_ICONS[kind]} ${p}`;
       el.appendChild(tag);
     });
+  }
+
+  // --- Vestigios por party (data-vest en cada .party-field) ---
+  // "fijo:texto"          → reparto que no cambia ("1 vestigio cada uno").
+  // "rot:A > B > C"       → los dobles rotan cada semana en ese orden; A los
+  //                          tiene la semana de VEST_ROT_START, B la siguiente…
+  //                          "A+B" = a dos personas juntas esa semana.
+  // La semana sale de WEEK_START (miércoles 7pm), así que avanza sola.
+  const VEST_ROT_START = "2026-09-30";
+  function weeksSince(fromYmd, toYmd) {
+    return Math.round((Date.parse(toYmd + "T00:00:00Z") - Date.parse(fromYmd + "T00:00:00Z")) / (7 * 86400000));
+  }
+  function renderVest(line, note) {
+    const spec = line.dataset.vest;
+    if (!spec) return;
+    const tag = document.createElement("span");
+    tag.className = "note-tag note-vest";
+    const [type, ...rest] = spec.split(":");
+    const value = rest.join(":").trim();
+    if (type === "rot") {
+      const turns = value.split(">").map(s => s.trim().replace(/\+/g, " y ")).filter(Boolean);
+      const k = weeksSince(VEST_ROT_START, WEEK_START);
+      const mod = n => ((n % turns.length) + turns.length) % turns.length;
+      const now = turns[mod(k)];
+      const next = turns[mod(k + 1)];
+      const strong = document.createElement("strong");
+      strong.textContent = now;
+      const nextEl = document.createElement("span");
+      nextEl.className = "vest-next";
+      nextEl.textContent = ` · próx. (mié ${shortDate(addDays(WEEK_START, 7))}): ${next}`;
+      tag.append(`${NOTE_ICONS.vest} Dobles esta semana: `, strong, nextEl);
+      tag.title = "Rotación: " + turns.join(" → ");
+    } else {
+      tag.textContent = `${NOTE_ICONS.vest} ${value}`;
+    }
+    note.appendChild(tag);
   }
 
   // Guarda el texto/HTML original de cada línea de party (ya no se edita,
@@ -975,7 +992,7 @@
     members.innerHTML = full;
     line.dataset.full = full;
     const note = line.querySelector(".party-note");
-    if (note) renderNoteTags(note);
+    if (note) { renderNoteTags(note); renderVest(line, note); }
   });
 
   function escapeRegExp(s) {
@@ -1292,7 +1309,7 @@
 
   // Chip "Semana del mié X/Y": cuenta los días hasta el próximo reset semanal
   // (miércoles 7pm). Si cambió la semana con la página abierta, recarga para
-  // que las notas atadas a una semana se re-etiqueten.
+  // que la rotación de vestigios pase al turno siguiente.
   const weekChipEl = document.getElementById("week-chip");
   function updateWeekChip() {
     if (!weekChipEl) return;
