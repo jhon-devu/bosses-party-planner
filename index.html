@@ -108,6 +108,9 @@
     font-variant-numeric: tabular-nums;
   }
   .reset-timer.after strong { color: var(--accent-2); }
+  .top-controls { flex-wrap: wrap; justify-content: flex-end; }
+  .note-tag.note-vest strong { color: var(--text); }
+  .note-tag .vest-next { color: var(--muted); }
 
   /* Switch de tema oscuro/claro */
   .theme-toggle {
@@ -232,6 +235,12 @@
     flex-direction: column;
     gap: 3px;
   }
+  .party-list:empty::before {
+    content: "Sin parties armadas…";
+    font-size: 0.86rem;
+    color: var(--muted);
+    font-style: italic;
+  }
   .party-field {
     font-size: 0.94rem;
     min-height: 1.3em;
@@ -248,6 +257,25 @@
   .boss-card.dim { opacity: 0.32; filter: grayscale(0.5); }
   .boss-card.match { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
   .party-field.line-hide { display: none; }
+  .party-field { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .party-field:last-child { border-bottom: none; }
+  .party-members { display: block; }
+  .party-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 3px;
+  }
+  .note-tag {
+    font-size: 0.72rem;
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+  .note-tag.note-item  { background: color-mix(in srgb, var(--cat-4) 16%, transparent); color: var(--text); }
+  .note-tag.note-vest  { background: color-mix(in srgb, var(--cat-1) 16%, transparent); color: var(--text); }
+  .note-tag.note-blink { background: color-mix(in srgb, var(--accent-2) 14%, transparent); color: var(--text); }
   .party-size {
     display: inline-block;
     font-size: 0.65rem;
@@ -494,6 +522,11 @@
     background: var(--panel);
     white-space: nowrap;
   }
+  tr.no-party td {
+    text-decoration: line-through;
+    color: var(--muted);
+    opacity: 0.6;
+  }
 
   footer.bar {
     max-width: 1180px;
@@ -527,6 +560,7 @@
       <p>Editá cualquier campo con click (roster, parties, notas, horarios) — se guarda solo en este navegador.</p>
     </div>
     <div class="top-controls">
+      <span class="reset-timer week-chip" id="week-chip" title="La semana de bosses arranca el miércoles con el reset de las 7:00 pm, hora Colombia"></span>
       <span class="reset-timer" id="reset-timer" title="Reset diario a las 7:00 pm, hora Colombia"></span>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
         <span class="knob" id="theme-knob">🌙</span>
@@ -569,13 +603,13 @@
         <div class="day-row" id="day-row-1"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Choscar (Demon Slayer), Chepas (Shade)</div>
-          <div class="party-field"><img class="diff-badge-inline" src="badge-extreme.png" alt="Xtreme">Sebas (Bishop), Otaku (Wind Archer), Chepas (Night Lord), Tacos (Adele)</div>
-          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Kanna)</div>
-          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Bucanero)</div>
-          <div class="party-field"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Edu (Bishop), Choscar (Pally), Sushimitzu (Night Walker), Mechitax (Hoyoung)</div>
+          <div class="party-field" data-vest="rot:Sebas+Choscar > Franklin+Tacos"><span class="party-members"><img class="diff-badge-inline" src="badge-extreme.png" alt="Xtreme">Sebas (Bishop), Franklin (Wind Archer), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Franklin (Sia), Sebas (Kanna), Choscar (Erel)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Franklin (Battle Mage), Danna (Angelic Buster)</span><span class="party-note">Danna Full prio</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Sebas (Erel), Franklin (Lynn), Tacos (Hayato)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:No tira vestigios"><span class="party-members"><img class="diff-badge-inline" src="badge-chaos.png" alt="Chaos">Danna (Lynn), Mechitax (Hoyoung), Sushimitzu (Night Walker)</span><span class="party-note">Full blink</span></div>
         </div>
-        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-1-notes">Cada pj tiene su propio clear semanal — no se pisan entre sí.</div></div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-1-notes" data-placeholder="Sin notas…"></div></div>
       </article>
 
       <article class="boss-card">
@@ -587,12 +621,11 @@
         <div class="day-row" id="day-row-2"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer), Mechitax (Hoyoung)</div>
-          <div class="party-field">Sebas (Kanna), Chepas (Night Lord), Choscar (Demon Slayer)</div>
-          <div class="party-field">Sebas (Bucanero)</div>
-          <div class="party-field">Edu (Bishop), Tacos (Adele), Chepas (Shade)</div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Prioridad anillo limbo Sebas</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Rikar"><span class="party-members">Sebas (Kanna), Rikar (Bishop), Mechitax (Hoyoung)</span><span class="party-note">Prioridad Anillo limbo Sebas</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Erel), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Prioridad Anillo limbo Choscar - Grindstone lv 6 blink Choscar y Tacos</span></div>
         </div>
-        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-2-notes">Full cookies, no vestigios hasta armar una party nueva para que Choscar pueda blinkear por cosas.</div></div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-2-notes" data-placeholder="Sin notas…"></div></div>
       </article>
 
       <article class="boss-card">
@@ -604,9 +637,10 @@
         <div class="day-row" id="day-row-3"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer)</div>
-          <div class="party-field">Sebas (Kanna), Chepas (Night Lord)</div>
-          <div class="party-field">Sebas (Bucanero), Tacos (Adele), Edu (Bishop), Choscar (Demon Slayer)</div>
+          <div class="party-field" data-vest="rot:Sebas > Danna"><span class="party-members">Sebas (Kanna), Danna (Angelic Buster)</span><span class="party-note">Duo blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Franklin (Wind Archer), Sebas (Bishop), Tacos (Hayato), Choscar (Erel)</span><span class="party-note">Duo blink Sebas y Franklin</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno, los que sobran blink"><span class="party-members">Sebas (Bucanero), Danna (Lynn), Crunchyroll (Night Walker), Sushimitzu (Night Walker), Franklin (Battle Mage), Mechitax (Hoyoung)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="rot:Choscar > Tacos"><span class="party-members">Sebas (Erel), Franklin (Sia), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Duo blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-3-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -620,9 +654,11 @@
         <div class="day-row" id="day-row-7"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer)</div>
-          <div class="party-field">Sebas (Kanna), Chepas (Night Lord)</div>
-          <div class="party-field">Sebas (Bucanero), Tacos (Adele), Edu (Bishop), Choscar (Demon Slayer)</div>
+          <div class="party-field" data-vest="fijo:2 vestigios para cada uno"><span class="party-members">Sebas (Bucanero), Franklin (Battle Mage), Sushimitzu (Night Walker)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Full blink</span></div>
+          <div class="party-field" data-vest="fijo:3 vestigios para cada uno"><span class="party-members">Sebas (Kanna), Rikar (Bishop)</span><span class="party-note">Prioridad hammer Sebas, segundo Rikar (Bishop)</span></div>
+          <div class="party-field" data-vest="fijo:3 vestigios para cada uno, solo Tacos y Choscar"><span class="party-members">Franklin (Sia), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Tacos y Choscar blinkean por hammer, y la mulita va por emblema</span></div>
+          <div class="party-field" data-vest="fijo:2 vestigios cada uno, los que sobran blink"><span class="party-members">Sebas (Erel), Danna (Lynn), Mechitax (Hoyoung), Rikar (Cadena)</span><span class="party-note">Full blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-7-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -636,12 +672,11 @@
         <div class="day-row" id="day-row-4"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field">Sebas (Bishop), Otaku (Wind Archer)</div>
-          <div class="party-field">Sebas (Kanna), Chepas (Night Lord), Tacos (Adele)</div>
-          <div class="party-field">Sebas (Bucanero)</div>
-          <div class="party-field">Edu (Bishop), Choscar (Demon Slayer), Mechitax (Hoyoung)</div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer)</span><span class="party-note">Duo blink anillo malefic</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Rikar"><span class="party-members">Sebas (Kanna), Rikar (Bishop)</span><span class="party-note">Prioridad anillo malefic Sebas</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Bucanero), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
         </div>
-        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-4-notes">Ya no está pendiente: quedaron 4 parties armadas, una por pj.</div></div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-4-notes" data-placeholder="Sin notas…"></div></div>
       </article>
 
       <article class="boss-card">
@@ -653,12 +688,12 @@
         <div class="day-row" id="day-row-5"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field">Sebas (Bishop), Tacos (Adele)</div>
-          <div class="party-field">Sebas (Kanna), Otaku (Wind Archer)</div>
-          <div class="party-field">Sebas (Bucanero), Chepas (Night Lord)</div>
-          <div class="party-field">Edu (Bishop), Choscar (Demon Slayer), Mechitax (Hoyoung)</div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin"><span class="party-members">Sebas (Bishop), Franklin (Wind Archer), Choscar (Erel)</span><span class="party-note">Prioridad medalla Sebas</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Erel), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Prioridad medalla Sebas - Choscar segunda medalla</span></div>
+          <div class="party-field" data-vest="rot:Sebas > Franklin (Sia)"><span class="party-members">Sebas (Kanna), Franklin (Sia), Mechitax (Hoyoung)</span><span class="party-note">Prioridad Sebas Medalla</span></div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Sebas (Bucanero), Franklin (Battle Mage), Danna (Angelic Buster)</span><span class="party-note">Duo blink Danna y Sebas medalla y grindstone</span></div>
         </div>
-        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-5-notes">Full cookies, no vestigios hasta armar una party nueva para que Choscar pueda blinkear por cosas.</div></div>
+        <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-5-notes" data-placeholder="Sin notas…"></div></div>
       </article>
 
       <article class="boss-card">
@@ -670,10 +705,7 @@
         <div class="day-row" id="day-row-6"></div>
         <div class="label">Parties</div>
         <div class="party-list">
-          <div class="party-field">Sebas (Bishop)</div>
-          <div class="party-field"><span class="undefined">Sebas (Kanna) — N/A, falta nivel</span></div>
-          <div class="party-field"><span class="undefined">Sebas (Bucanero) — N/A, falta nivel</span></div>
-          <div class="party-field">Edu (Bishop), Choscar (Demon Slayer), Tacos (Adele)</div>
+          <div class="party-field" data-vest="fijo:1 vestigio cada uno"><span class="party-members">Danna (Angelic Buster), Tacos (Adele), Choscar (Demon Slayer)</span><span class="party-note">Full blink</span></div>
         </div>
         <div><div class="label">Notas</div><div class="notes-field" contenteditable="true" data-key="boss-6-notes" data-placeholder="Sin notas…"></div></div>
       </article>
@@ -708,15 +740,17 @@
 <script>
   // --- Roster fijo: única fuente de verdad para el roster y para "¿Quién sos?" ---
   const ROSTER = [
-    { name: "Otaku",      classes: "Wind Archer, Battle Mage" },
-    { name: "Sebas",      classes: "Bishop, Bucanero, Kanna" },
-    { name: "Choscar",    classes: "Demon Slayer, Pally" },
+    { name: "Franklin",   classes: "Wind Archer, Battle Mage, Sia, Lynn" },
+    { name: "Sebas",      classes: "Bishop, Bucanero, Kanna, Erel" },
+    { name: "Choscar",    classes: "Demon Slayer, Pally, Erel" },
     { name: "Edu",        classes: "Bishop" },
-    { name: "Tacos",      classes: "Adele" },
+    { name: "Tacos",      classes: "Adele, Hayato" },
     { name: "Rikar",      classes: "Cadena, Bishop" },
     { name: "Mechitax",   classes: "Hoyoung" },
     { name: "Chepas",     classes: "Night Lord, Shade" },
     { name: "Sushimitzu", classes: "Night Walker" },
+    { name: "Danna",      classes: 'Angelic Buster, Lynn, Cannon Master, quien se cree "Ren"' },
+    { name: "Crunchyroll", classes: "Night Walker" },
   ];
 
   const bossNames = ["Ckalos", "Limbo", "Kaling", "Seren", "Malefic", "Adversary", "Baldrix"];
@@ -733,6 +767,7 @@
     tdClass.textContent = p.classes;
     tr.appendChild(tdName);
     tr.appendChild(tdClass);
+    tr.dataset.person = p.name;
     rosterBody.appendChild(tr);
   });
 
@@ -870,18 +905,109 @@
     return found ? found.length : 0;
   }
 
+  // Nota de cada party ("Full blink - Vestigios dobles - ..."): se parte por " - "
+  // y cada pedazo se muestra como etiqueta según de qué habla, para ver de un
+  // vistazo cómo vamos con las prioridades de items y los vestigios.
+  function noteKind(text) {
+    if (/vestigio/i.test(text)) return "vest";
+    if (/prio|medalla|anillo|hammer|emblema|grindstone/i.test(text)) return "item";
+    if (/blink/i.test(text)) return "blink";
+    return "misc";
+  }
+  const NOTE_ICONS = { vest: "🔹", item: "🎁", blink: "⚡", misc: "📝" };
+  // --- Semana de bosses: arranca el miércoles con el reset de las 7:00 pm
+  // hora Colombia (UTC-5 fijo, sin horario de verano). Devuelve el miércoles
+  // de inicio como "YYYY-MM-DD", así se calcula sola semana a semana. ---
+  function currentWeekStart() {
+    const bogota = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    let back = (bogota.getUTCDay() - 3 + 7) % 7;            // días desde el último miércoles
+    if (back === 0 && bogota.getUTCHours() < 19) back = 7; // miércoles antes del reset: sigue la anterior
+    const start = new Date(Date.UTC(bogota.getUTCFullYear(), bogota.getUTCMonth(), bogota.getUTCDate() - back));
+    return start.toISOString().slice(0, 10);
+  }
+  function addDays(ymd, n) {
+    const d = new Date(ymd + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+  function shortDate(ymd) {
+    const [, m, d] = ymd.split("-");
+    return `${+d}/${+m}`;
+  }
+  const WEEK_START = currentWeekStart();
+
+  function renderNoteTags(el) {
+    const parts = el.textContent.split(/\s+-\s+/).map(s => s.trim()).filter(Boolean);
+    el.textContent = "";
+    parts.forEach(p => {
+      const kind = noteKind(p);
+      const tag = document.createElement("span");
+      tag.className = `note-tag note-${kind}`;
+      tag.textContent = `${NOTE_ICONS[kind]} ${p}`;
+      el.appendChild(tag);
+    });
+  }
+
+  // --- Vestigios por party (data-vest en cada .party-field) ---
+  // "fijo:texto"          → reparto que no cambia ("1 vestigio cada uno").
+  // "rot:A > B > C"       → los dobles rotan cada semana en ese orden; A los
+  //                          tiene la semana de VEST_ROT_START, B la siguiente…
+  //                          "A+B" = a dos personas juntas esa semana.
+  // La semana sale de WEEK_START (miércoles 7pm), así que avanza sola.
+  const VEST_ROT_START = "2026-09-30";
+  function weeksSince(fromYmd, toYmd) {
+    return Math.round((Date.parse(toYmd + "T00:00:00Z") - Date.parse(fromYmd + "T00:00:00Z")) / (7 * 86400000));
+  }
+  function renderVest(line, note) {
+    const spec = line.dataset.vest;
+    if (!spec) return;
+    const tag = document.createElement("span");
+    tag.className = "note-tag note-vest";
+    const [type, ...rest] = spec.split(":");
+    const value = rest.join(":").trim();
+    if (type === "rot") {
+      const turns = value.split(">").map(s => s.trim().replace(/\+/g, " y ")).filter(Boolean);
+      const k = weeksSince(VEST_ROT_START, WEEK_START);
+      const mod = n => ((n % turns.length) + turns.length) % turns.length;
+      const now = turns[mod(k)];
+      const next = turns[mod(k + 1)];
+      const strong = document.createElement("strong");
+      strong.textContent = now;
+      const nextEl = document.createElement("span");
+      nextEl.className = "vest-next";
+      nextEl.textContent = ` · próx. (mié ${shortDate(addDays(WEEK_START, 7))}): ${next}`;
+      tag.append(`${NOTE_ICONS.vest} Dobles esta semana: `, strong, nextEl);
+      tag.title = "Rotación: " + turns.join(" → ");
+    } else {
+      tag.textContent = `${NOTE_ICONS.vest} ${value}`;
+    }
+    note.appendChild(tag);
+  }
+
   // Guarda el texto/HTML original de cada línea de party (ya no se edita,
   // así que esto no cambia solo) para poder recortar el propio nombre cuando
   // se filtra por esa persona, y restaurar la línea completa al des-filtrar.
   // La etiqueta de tamaño se calcula UNA vez y queda incluida en ese "original".
   document.querySelectorAll(".party-field").forEach(line => {
-    const raw = line.innerHTML;
+    const members = line.querySelector(".party-members");
+    const raw = members.innerHTML;
     const count = countPartyMembers(raw);
     const label = PARTY_SIZE_LABELS[count] || (count > 4 ? `Party de ${count}` : "");
     const badge = label ? `<span class="party-size size-${Math.min(count, 5)}">${label}</span>` : "";
     const full = badge + raw;
-    line.innerHTML = full;
+    members.innerHTML = full;
     line.dataset.full = full;
+    const note = line.querySelector(".party-note");
+    if (note) { renderNoteTags(note); renderVest(line, note); }
+  });
+
+  // --- Roster: tachar a quien no está en ninguna party ---
+  // Se calcula de las parties, así que si alguien vuelve a una se destacha solo.
+  const partyText = [...document.querySelectorAll(".party-members")].map(m => m.textContent).join(" ");
+  rosterBody.querySelectorAll("tr").forEach(tr => {
+    const inParty = partyText.includes(`${tr.dataset.person} (`);
+    tr.classList.toggle("no-party", !inParty);
+    if (!inParty) tr.title = "Sin parties por ahora";
   });
 
   function escapeRegExp(s) {
@@ -1077,7 +1203,7 @@
         c.classList.remove("dim", "match");
         c.querySelectorAll(".party-field").forEach(line => {
           line.classList.remove("line-match", "line-hide");
-          line.innerHTML = line.dataset.full; // restaurar por si quedó recortada
+          line.querySelector(".party-members").innerHTML = line.dataset.full; // restaurar por si quedó recortada
         });
       });
       summary.textContent = "Elegí tu nombre y, si tenés más de un personaje, cuál usás.";
@@ -1107,7 +1233,7 @@
           : text.includes(p);
         line.classList.toggle("line-match", isLineMatch);
         line.classList.toggle("line-hide", !isLineMatch); // solo se ve la línea que matchea
-        line.innerHTML = (isLineMatch && stripCls) ? stripOwnMention(fullHtml, person, stripCls) : fullHtml;
+        line.querySelector(".party-members").innerHTML = (isLineMatch && stripCls) ? stripOwnMention(fullHtml, person, stripCls) : fullHtml;
         if (isLineMatch) cardHasMatch = true;
       });
       c.classList.toggle("match", cardHasMatch);
@@ -1195,6 +1321,23 @@
   }
   updateResetTimer();
   setInterval(updateResetTimer, 15000);
+
+  // Chip "Semana del mié X/Y": cuenta los días hasta el próximo reset semanal
+  // (miércoles 7pm). Si cambió la semana con la página abierta, recarga para
+  // que la rotación de vestigios pase al turno siguiente.
+  const weekChipEl = document.getElementById("week-chip");
+  function updateWeekChip() {
+    if (!weekChipEl) return;
+    const now = currentWeekStart();
+    if (now !== WEEK_START) { location.reload(); return; }
+    const nextReset = Date.UTC(...addDays(WEEK_START, 7).split("-").map((v, i) => i === 1 ? v - 1 : +v), 19 + 5);
+    const msLeft = nextReset - Date.now();
+    const d = Math.floor(msLeft / 86400000);
+    const hLeft = Math.floor((msLeft % 86400000) / 3600000);
+    weekChipEl.innerHTML = `📅 Semana del mié <strong>${shortDate(WEEK_START)}</strong> · reset semanal en <strong>${d}d ${hLeft}h</strong>`;
+  }
+  updateWeekChip();
+  setInterval(updateWeekChip, 60000);
 </script>
 
 </body>
