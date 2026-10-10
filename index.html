@@ -622,6 +622,119 @@
   #mesos-player .pj b { font-variant-numeric: tabular-nums; }
   #mesos-player .player-total { font-weight: 700; color: var(--text); margin-right: 4px; }
   #mesos-player .player-total b { color: var(--accent-2); font-variant-numeric: tabular-nums; }
+
+  /* Quién está viendo */
+  .viewer-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .viewer-btn:hover { border-color: var(--accent); }
+  .viewer-btn .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pc-color, var(--muted)); }
+  .viewer-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(8, 9, 14, 0.72);
+    backdrop-filter: blur(6px);
+  }
+  .viewer-gate[hidden] { display: none; }
+  .viewer-dialog {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 24px;
+  }
+  .viewer-dialog h2 { margin: 0 0 6px; font-size: 1.3rem; }
+  .viewer-dialog p { margin: 0 0 18px; color: var(--muted); font-size: 0.88rem; }
+  .viewer-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .viewer-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+  }
+  .viewer-close:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Mis runs */
+  .runs-progress {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-bottom: 12px;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  .runs-progress strong { color: var(--text); }
+  .runs-bar {
+    flex: 1 1 200px;
+    max-width: 360px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .runs-bar span { display: block; height: 100%; background: var(--accent-2); transition: width 0.2s; }
+  .runs-table td { vertical-align: middle; }
+  .runs-table input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-2); cursor: pointer; }
+  .runs-table .boss-name { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+  .runs-table .boss-name img { width: 22px; height: 22px; }
+  .runs-table .boss-name small { color: var(--muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; }
+  .runs-table .partners { color: var(--muted); font-size: 0.82rem; }
+  .runs-table tr.done td:not(:first-child) { opacity: 0.45; }
+  .runs-table tr.done .boss-name { text-decoration: line-through; }
+  .runs-days { display: flex; gap: 3px; }
+  .runs-days .day-chip { padding: 3px 7px; }
+  .runs-days .day-chip.today { border-color: var(--accent); }
+  .runs-table input[type="time"] {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 3px 6px;
+    font: inherit;
+    font-size: 0.82rem;
+  }
+  .runs-empty { color: var(--muted); text-align: center; padding: 22px 12px; }
+  .runs-empty button {
+    margin-left: 6px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font: inherit;
+  }
+  .day-chip.done { background: transparent; border-color: var(--accent-2); color: var(--accent-2); }
+  tr.flash td { animation: flash 1.2s ease-out; }
+  @keyframes flash { from { background: color-mix(in srgb, var(--accent) 25%, transparent); } to { background: transparent; } }
 </style>
 </head>
 <body>
@@ -633,6 +746,7 @@
       <p>Editá cualquier campo con click (roster, parties, notas, horarios) — se guarda solo en este navegador.</p>
     </div>
     <div class="top-controls">
+      <button type="button" class="viewer-btn" id="viewer-btn"><span class="dot"></span><span class="viewer-name">¿Quién sos?</span></button>
       <span class="reset-timer week-chip" id="week-chip" title="La semana de bosses arranca el miércoles con el reset de las 7:00 pm, hora Colombia"></span>
       <span class="reset-timer" id="reset-timer" title="Reset diario a las 7:00 pm, hora Colombia"></span>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
@@ -820,24 +934,38 @@
     <div id="mesos-player"></div>
   </section>
 
-  <!-- HORARIOS / VISTA SEMANAL -->
+  <!-- MIS RUNS: HORARIOS + CHECKLIST -->
   <section id="horarios">
-    <h2>Horarios <span class="tag">Vista semanal</span></h2>
-    <p class="desc">Hora (o "hecho ✅") por boss y día. Dejalo vacío si no está agendado.</p>
+    <h2>Mis runs <span class="tag">Horarios y checklist</span></h2>
+    <p class="desc">Todas tus runs de la semana, una por mula y boss según las parties. Marcá el día y la hora para agendarla y tildala cuando la hagas; los tildes se limpian solos con el reset del miércoles.</p>
+    <div class="runs-progress" id="runs-progress"></div>
     <div class="table-wrap">
-      <table>
+      <table class="runs-table">
         <thead>
           <tr>
-            <th style="width:16%">Boss</th>
-            <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
+            <th style="width:48px">Hecha</th>
+            <th>Boss</th>
+            <th>Mula</th>
+            <th>Con</th>
+            <th>Día</th>
+            <th>Hora</th>
           </tr>
         </thead>
-        <tbody id="sched-body"></tbody>
+        <tbody id="runs-body"></tbody>
       </table>
     </div>
   </section>
 
 </main>
+
+<div class="viewer-gate" id="viewer-gate" hidden>
+  <div class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+    <button type="button" class="viewer-close" id="viewer-close" aria-label="Cerrar">✕</button>
+    <h2 id="viewer-title">¿Quién está viendo la página?</h2>
+    <p>Cada uno tiene su propio gestor de bosses: horarios, checklist de runs, notas y mesos se guardan por persona en este navegador.</p>
+    <div class="viewer-grid" id="viewer-grid"></div>
+  </div>
+</div>
 
 <footer class="bar">
   <span>Los cambios se guardan automáticamente en este navegador (localStorage).</span>
@@ -860,9 +988,6 @@
     { name: "Crunchyroll", classes: "Night Walker" },
   ];
 
-  const bossNames = ["Ckalos", "Limbo", "Kaling", "Seren", "Malefic", "Adversary", "Baldrix"];
-  const days = ["lun","mar","mie","jue","vie","sab","dom"];
-
   // --- Build roster table (fijo, no editable) ---
   const rosterBody = document.getElementById("roster-body");
   ROSTER.forEach(p => {
@@ -878,26 +1003,14 @@
     rosterBody.appendChild(tr);
   });
 
-  // --- Build weekly schedule table ---
-  const schedBody = document.getElementById("sched-body");
-  bossNames.forEach((name, bi) => {
-    const tr = document.createElement("tr");
-    const head = document.createElement("td");
-    head.className = "rowhead";
-    head.textContent = name;
-    tr.appendChild(head);
-    days.forEach(d => {
-      const td = document.createElement("td");
-      td.contentEditable = "true";
-      td.dataset.key = `sched-${bi}-${d}`;
-      td.dataset.placeholder = "hh:mm";
-      tr.appendChild(td);
-    });
-    schedBody.appendChild(tr);
-  });
-
   // --- Persistence: generic contenteditable ---
-  const PREFIX = "bp_";
+  // Cada persona que mira la página tiene su propio espacio guardado; la
+  // elige en "¿Quién está viendo la página?" (ver más abajo).
+  const VIEWER_KEY = "bp_viewer";
+  let VIEWER = null;
+  try { VIEWER = localStorage.getItem(VIEWER_KEY); } catch (e) {}
+  if (VIEWER && !ROSTER.some(p => p.name === VIEWER)) VIEWER = null;
+  const PREFIX = VIEWER ? `bp_u-${VIEWER}_` : "bp_";
   function loadAndBind() {
     document.querySelectorAll("[data-key]").forEach(el => {
       const key = PREFIX + el.dataset.key;
@@ -928,76 +1041,10 @@
       k.startsWith(PREFIX + "prio-") ||
       k.startsWith(PREFIX + "vest-") ||
       /^bp_boss-\d+-p\d+$/.test(k) ||
-      /^bp_boss-\d+-title$/.test(k)
+      /^bp_boss-\d+-title$/.test(k) ||
+      /^bp_(u-.+_)?sched-\d+-\w+$/.test(k) // horarios por boss de antes de "Mis runs"
     )
     .forEach(k => localStorage.removeItem(k));
-
-  // --- Selector de día por card: se mapea directo a la fila del boss en
-  // "Horarios / Vista semanal". La celda de la tabla es la única fuente de
-  // verdad (si tiene texto, ese día está "activo"), así queda sincronizado
-  // en los dos sentidos: tocar el chip o escribir en la tabla hacen lo mismo.
-  const DAY_LABELS = { lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom" };
-  // Card boss-N -> índice de fila en la tabla de horarios (bossNames de arriba).
-  const BOSS_SCHED_INDEX = { 1: 0, 2: 1, 3: 2, 7: 3, 4: 4, 5: 5, 6: 6 };
-  const SCHED_INDEX_TO_BOSS = { 0: 1, 1: 2, 2: 3, 3: 7, 4: 4, 5: 5, 6: 6 };
-
-  // Cada pj clearea el boss 1 sola vez por semana, así que un boss no puede
-  // tener más de 1 día marcado: al activar uno, se limpian los demás.
-  function enforceSingleDay(schedIndex, keepDay) {
-    days.forEach(d => {
-      if (d === keepDay) return;
-      const otherCell = document.querySelector(`[data-key="sched-${schedIndex}-${d}"]`);
-      if (otherCell && otherCell.textContent.trim() !== "") {
-        otherCell.textContent = "";
-        localStorage.setItem(PREFIX + `sched-${schedIndex}-${d}`, otherCell.innerHTML);
-      }
-    });
-  }
-
-  function renderDayRow(bossNum) {
-    const wrap = document.getElementById(`day-row-${bossNum}`);
-    if (!wrap) return;
-    const schedIndex = BOSS_SCHED_INDEX[bossNum];
-    wrap.innerHTML = "";
-    days.forEach(d => {
-      const cell = document.querySelector(`[data-key="sched-${schedIndex}-${d}"]`);
-      const active = !!(cell && cell.textContent.trim() !== "");
-      if (cell) cell.classList.toggle("day-marked", active);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "day-chip" + (active ? " active" : "");
-      btn.textContent = DAY_LABELS[d];
-      btn.title = active ? "Quitar este día" : "Marcar este día (reemplaza cualquier otro día de este boss)";
-      btn.addEventListener("click", () => {
-        if (!cell) return;
-        const turningOn = cell.textContent.trim() === "";
-        cell.textContent = turningOn ? "✅" : "";
-        localStorage.setItem(PREFIX + `sched-${schedIndex}-${d}`, cell.innerHTML);
-        if (turningOn) enforceSingleDay(schedIndex, d);
-        renderDayRow(bossNum);
-      });
-      wrap.appendChild(btn);
-    });
-  }
-
-  Object.keys(BOSS_SCHED_INDEX).forEach(bossNum => renderDayRow(Number(bossNum)));
-
-  // Si editan la hora directo en la tabla de horarios (en vez de usar los
-  // chips), también se aplica el límite de 1 día por boss, y los chips de
-  // la card correspondiente se refrescan solos.
-  Object.entries(SCHED_INDEX_TO_BOSS).forEach(([schedIndex, bossNum]) => {
-    const idx = Number(schedIndex);
-    days.forEach(d => {
-      const cell = document.querySelector(`[data-key="sched-${idx}-${d}"]`);
-      if (cell) {
-        cell.addEventListener("blur", () => {
-          if (cell.textContent.trim() !== "") enforceSingleDay(idx, d);
-          renderDayRow(bossNum);
-        });
-      }
-    });
-  });
 
   // Etiqueta automática de tamaño de party (Solo / Dúo / Trío / Cuarteto...),
   // calculada contando cuántos "Nombre (Clase)" hay en la línea — así nunca
@@ -1222,7 +1269,8 @@
     localStorage.setItem(PREFIX + "selected-class", cls);
   }
 
-  personChipWrap.dataset.selected = localStorage.getItem(PREFIX + "selected-person") || "";
+  // Si nunca eligió a nadie en el filtro, arranca mostrando a quien está viendo.
+  personChipWrap.dataset.selected = localStorage.getItem(PREFIX + "selected-person") ?? (VIEWER || "");
   charChipWrap.dataset.selected = localStorage.getItem(PREFIX + "selected-class") || "";
   // Si la persona guardada ya no existe en el roster (se borró/cambió), se descarta.
   if (personChipWrap.dataset.selected && !ROSTER.some(p => p.name === personChipWrap.dataset.selected)) {
@@ -1640,6 +1688,273 @@
   if (startPerson && ROSTER.some(p => p.name === startPerson)) mesosPersonSel.value = startPerson;
   fillMesosChars(charChipWrap.dataset.selected);
   renderMesos();
+
+  // --- Mis runs: horarios + checklist de la persona que está viendo ---
+  // Cada run es una mula en una party de un boss (sale de las cards). Se agenda
+  // en 1 solo día de la semana de bosses (arranca el miércoles) con una hora
+  // opcional, y se tilda cuando se hace. Los tildes se guardan por semana
+  // (WEEK_START), así que con el reset del miércoles arranca todo sin tildar.
+  const RUN_DAYS = ["mie", "jue", "vie", "sab", "dom", "lun", "mar"];
+  const DAY_LABELS = { lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom" };
+  const TODAY_KEY = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"][new Date(Date.now() - 5 * 60 * 60 * 1000).getUTCDay()];
+
+  function runsFor(person) {
+    const runs = [];
+    if (!person) return runs;
+    const mine = new RegExp(escapeRegExp(person) + "\\s*\\(([^)]+)\\)", "i");
+    document.querySelectorAll(".boss-card").forEach(card => {
+      const icon = card.querySelector(".boss-icon")?.getAttribute("src");
+      const boss = BOSS_MESOS.find(b => b.icon === icon);
+      if (!boss) return;
+      const cardBadge = card.querySelector(".diff-badge")?.alt;
+      const dayRow = card.querySelector(".day-row");
+      card.querySelectorAll(".party-field").forEach(line => {
+        const full = line.dataset.full || "";
+        const text = full.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+        const m = text.match(mine);
+        if (!m) return;
+        const cls = m[1].trim();
+        const lineBadge = (full.match(/class="diff-badge-inline"[^>]*alt="(\w+)"/) || [])[1];
+        const partners = [...text.matchAll(/([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s*\(([^)]+)\)/g)]
+          .filter(x => x[1].toLowerCase() !== person.toLowerCase())
+          .map(x => `${x[1]} (${x[2].trim()})`);
+        runs.push({
+          id: `${boss.id}|${cls}`,
+          boss,
+          cls,
+          diff: BADGE_TO_DIFF[lineBadge || cardBadge] || "",
+          partners,
+          dayRowId: dayRow ? dayRow.id : null,
+        });
+      });
+    });
+    return runs;
+  }
+
+  const runSchedKey = id => PREFIX + `run-sched-${id}`;
+  const runDoneKey = id => PREFIX + `run-done-${WEEK_START}-${id}`;
+  function getRunSched(id) {
+    try { return JSON.parse(localStorage.getItem(runSchedKey(id))) || {}; } catch (e) { return {}; }
+  }
+  function setRunSched(id, v) {
+    try {
+      if (v.day) localStorage.setItem(runSchedKey(id), JSON.stringify(v));
+      else localStorage.removeItem(runSchedKey(id));
+    } catch (e) {}
+  }
+  function isRunDone(id) {
+    try { return localStorage.getItem(runDoneKey(id)) === "1"; } catch (e) { return false; }
+  }
+  function setRunDone(id, done) {
+    try {
+      if (done) localStorage.setItem(runDoneKey(id), "1");
+      else localStorage.removeItem(runDoneKey(id));
+    } catch (e) {}
+  }
+  // Los tildes de semanas anteriores ya no sirven.
+  try {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(PREFIX + "run-done-") && !k.startsWith(PREFIX + `run-done-${WEEK_START}-`))
+      .forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+
+  const runsBody = document.getElementById("runs-body");
+  const runsProgress = document.getElementById("runs-progress");
+
+  function renderRuns() {
+    const runs = runsFor(VIEWER);
+    runsBody.innerHTML = "";
+    runsProgress.innerHTML = "";
+
+    if (!VIEWER || !runs.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.className = "runs-empty";
+      if (!VIEWER) {
+        td.append("Elegí quién sos para ver tus runs.");
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = "¿Quién sos?";
+        b.addEventListener("click", openGate);
+        td.appendChild(b);
+      } else {
+        td.textContent = `${VIEWER} no está en ninguna party por ahora.`;
+      }
+      tr.appendChild(td);
+      runsBody.appendChild(tr);
+      renderCardDays([]);
+      return;
+    }
+
+    let done = 0;
+    runs.forEach(r => {
+      const sched = getRunSched(r.id);
+      const isDone = isRunDone(r.id);
+      if (isDone) done++;
+
+      const tr = document.createElement("tr");
+      tr.dataset.run = r.id;
+      tr.classList.toggle("done", isDone);
+
+      const tdChk = document.createElement("td");
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = isDone;
+      chk.setAttribute("aria-label", `${r.boss.name} con ${r.cls} hecha`);
+      chk.addEventListener("change", () => { setRunDone(r.id, chk.checked); renderRuns(); });
+      tdChk.appendChild(chk);
+
+      const tdBoss = document.createElement("td");
+      const name = document.createElement("span");
+      name.className = "boss-name";
+      const img = document.createElement("img");
+      img.src = r.boss.icon;
+      img.alt = "";
+      const small = document.createElement("small");
+      small.textContent = r.diff;
+      name.append(img, r.boss.name, small);
+      tdBoss.appendChild(name);
+
+      const tdCls = document.createElement("td");
+      tdCls.textContent = r.cls;
+
+      const tdWith = document.createElement("td");
+      tdWith.className = "partners";
+      tdWith.textContent = r.partners.length ? r.partners.join(", ") : "Solo";
+
+      const tdDays = document.createElement("td");
+      const daysWrap = document.createElement("div");
+      daysWrap.className = "runs-days";
+      RUN_DAYS.forEach(d => {
+        const b = document.createElement("button");
+        b.type = "button";
+        const active = sched.day === d;
+        b.className = "day-chip" + (active ? " active" : "") + (d === TODAY_KEY ? " today" : "");
+        b.textContent = DAY_LABELS[d];
+        b.title = active ? "Quitar el día" : `Agendar el ${DAY_LABELS[d]}`;
+        b.addEventListener("click", () => {
+          // 1 run = 1 clear por semana, así que solo puede tener un día.
+          setRunSched(r.id, active ? {} : { day: d, time: sched.time || "" });
+          renderRuns();
+        });
+        daysWrap.appendChild(b);
+      });
+      tdDays.appendChild(daysWrap);
+
+      const tdTime = document.createElement("td");
+      const time = document.createElement("input");
+      time.type = "time";
+      time.value = sched.time || "";
+      time.disabled = !sched.day;
+      time.title = sched.day ? "Hora de la run" : "Primero elegí el día";
+      time.addEventListener("change", () => {
+        setRunSched(r.id, { day: sched.day, time: time.value });
+        renderCardDays(runs);
+      });
+      tdTime.appendChild(time);
+
+      tr.append(tdChk, tdBoss, tdCls, tdWith, tdDays, tdTime);
+      runsBody.appendChild(tr);
+    });
+
+    const pct = Math.round((done / runs.length) * 100);
+    const label = document.createElement("span");
+    label.innerHTML = `<strong>${done} de ${runs.length}</strong> runs hechas · faltan <strong>${runs.length - done}</strong> · semana del mié ${shortDate(WEEK_START)}`;
+    const bar = document.createElement("div");
+    bar.className = "runs-bar";
+    bar.innerHTML = `<span style="width:${pct}%"></span>`;
+    runsProgress.append(label, bar);
+
+    renderCardDays(runs);
+  }
+
+  // Chips de día en cada card: muestran qué días tiene agendada alguna run
+  // de ese boss la persona que está viendo (✓ si ya la hizo). Al tocarlos
+  // lleva a la fila en "Mis runs", que es donde se agenda.
+  function renderCardDays(runs) {
+    document.querySelectorAll(".day-row").forEach(wrap => {
+      wrap.innerHTML = "";
+      const mine = runs.filter(r => r.dayRowId === wrap.id);
+      RUN_DAYS.forEach(d => {
+        const here = mine.filter(r => getRunSched(r.id).day === d);
+        const allDone = here.length > 0 && here.every(r => isRunDone(r.id));
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "day-chip" + (here.length ? (allDone ? " done" : " active") : "");
+        b.textContent = (allDone ? "✓ " : "") + DAY_LABELS[d];
+        b.title = here.length
+          ? here.map(r => `${r.cls}${getRunSched(r.id).time ? " · " + getRunSched(r.id).time : ""}${isRunDone(r.id) ? " (hecha)" : ""}`).join("\n")
+          : (mine.length ? "Agendá esta run en Mis runs" : "No tenés runs en este boss");
+        b.addEventListener("click", () => {
+          const target = mine.find(r => getRunSched(r.id).day === d) || mine[0];
+          if (!target) return;
+          const row = runsBody.querySelector(`tr[data-run="${CSS.escape(target.id)}"]`);
+          if (!row) return;
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+          row.classList.remove("flash");
+          void row.offsetWidth;
+          row.classList.add("flash");
+        });
+        wrap.appendChild(b);
+      });
+    });
+  }
+
+  // --- "¿Quién está viendo la página?" ---
+  // Cada persona tiene su propio espacio guardado (PREFIX con su nombre):
+  // horarios, checklist, estados, notas, mesos. Elegir recarga la página para
+  // que todo se lea del espacio de esa persona.
+  const gate = document.getElementById("viewer-gate");
+  const gateGrid = document.getElementById("viewer-grid");
+  const gateClose = document.getElementById("viewer-close");
+  const viewerBtn = document.getElementById("viewer-btn");
+
+  function openGate() {
+    gateGrid.innerHTML = "";
+    ROSTER.forEach(p => {
+      const n = getPersonClassList(p.name).length;
+      gateGrid.appendChild(makePersonCard(
+        p.name, p.name === VIEWER, colorForPerson(p.name), p.name[0].toUpperCase(),
+        `${n} PJ`, () => chooseViewer(p.name)
+      ));
+    });
+    gateClose.hidden = !VIEWER;
+    gate.hidden = false;
+  }
+  function closeGate() {
+    if (VIEWER) gate.hidden = true;
+  }
+  function chooseViewer(name) {
+    if (name === VIEWER) { closeGate(); return; }
+    try {
+      const np = `bp_u-${name}_`;
+      // Primera vez de esta persona: hereda lo que había guardado en este
+      // navegador antes de que existiera el selector (menos la selección del filtro).
+      const hasOwn = Object.keys(localStorage).some(k => k.startsWith(np));
+      if (!hasOwn) {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith("bp_") && !k.startsWith("bp_u-") &&
+                       ![VIEWER_KEY, "bp_theme", "bp_selected-person", "bp_selected-class"].includes(k))
+          .forEach(k => localStorage.setItem(np + k.slice(3), localStorage.getItem(k)));
+      }
+      localStorage.setItem(VIEWER_KEY, name);
+    } catch (e) {}
+    location.reload();
+  }
+  gateClose.addEventListener("click", closeGate);
+  gate.addEventListener("click", e => { if (e.target === gate) closeGate(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !gate.hidden) closeGate(); });
+  viewerBtn.addEventListener("click", openGate);
+
+  if (VIEWER) {
+    viewerBtn.style.setProperty("--pc-color", colorForPerson(VIEWER));
+    viewerBtn.querySelector(".viewer-name").textContent = VIEWER;
+    viewerBtn.title = "Cambiar de persona";
+  }
+
+  renderRuns();
+  if (!VIEWER) openGate();
 </script>
 
 </body>
