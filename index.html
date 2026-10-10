@@ -3011,7 +3011,9 @@
   gateClose.addEventListener("click", closeGate);
   gate.addEventListener("click", e => { if (e.target === gate) closeGate(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !gate.hidden) closeGate(); });
-  viewerBtn.addEventListener("click", openGate);
+  // Con sesión iniciada la tarjeta lleva a tus mulas; para cambiar de usuario
+  // está "Salir". El login solo se abre cuando no hay sesión.
+  viewerBtn.addEventListener("click", () => { if (VIEWER) showView("roster"); else openGate(); });
   // Cerrar sesión: lo guardado de la persona queda; solo se vuelve al login.
   document.getElementById("logout").addEventListener("click", () => {
     try { localStorage.removeItem(VIEWER_KEY); } catch (e) {}
@@ -3022,7 +3024,8 @@
     viewerBtn.style.setProperty("--pc-color", colorForPerson(VIEWER));
     viewerBtn.querySelector(".viewer-name").textContent = VIEWER;
     viewerBtn.querySelector(".dot").textContent = VIEWER[0].toUpperCase();
-    viewerBtn.title = "Cambiar de usuario";
+    viewerBtn.title = "Ver tus mulas";
+    viewerBtn.querySelector(".viewer-swap").textContent = "›";
     // Con sesión iniciada, en mesos solo se ven las mulas propias.
     mesosPersonSel.closest("label").hidden = true;
   }
