@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gestión de Parties · Bosses</title>
+<title>Bossing Imanity</title>
 <script>
   // Aplica el tema guardado ANTES de pintar, para que no haya flash.
   // Por defecto es oscuro (no se mira el tema del sistema operativo).
   (function () {
     var saved = localStorage.getItem("bp_theme");
     document.documentElement.dataset.theme = saved === "light" ? "light" : "dark";
+    // Sin sesión iniciada solo se ve el fondo, la música y el login.
+    if (!localStorage.getItem("bp_viewer")) document.documentElement.classList.add("logged-out");
   })();
 </script>
 <style>
@@ -17,12 +19,19 @@
      El switch de arriba a la derecha guarda la preferencia en localStorage
      y se aplica vía [data-theme] en <html> (ver script inline en <head>). */
   :root {
-    --bg: #14151c;
-    --panel: #1c1e28;
-    --panel-2: #23252f;
-    --text: #eceef4;
-    --muted: #9aa0b4;
-    --border: #2e3140;
+    --bg: #120e1f;
+    --panel: #1c1830;
+    --panel-2: #272141;
+    --text: #f0eef8;
+    --muted: #a9a4c4;
+    --border: #3b3459;
+    /* Sobre el fondo: velo que lo oscurece, paneles de vidrio y tarjetas */
+    --veil: linear-gradient(180deg, rgba(12, 8, 24, 0.38), rgba(12, 8, 24, 0.62));
+    --glass: rgba(21, 16, 36, 0.74);
+    --glass-main: rgba(21, 16, 36, 0.88);
+    --card: rgba(255, 255, 255, 0.05);
+    --glow: #ff9a3c;
+    --gap: clamp(8px, 1.1vw, 16px);
     --accent: #9c8cff;
     --accent-2: #2ed9a8;
     --warn: #ff8a6b;
@@ -41,6 +50,11 @@
     --text: #1c1e26;
     --muted: #6b7080;
     --border: #dde0e8;
+    --veil: rgba(246, 242, 255, 0.42);
+    --glass: rgba(255, 255, 255, 0.84);
+    --glass-main: rgba(255, 255, 255, 0.9);
+    --card: rgba(255, 255, 255, 0.7);
+    --glow: #e8751a;
     --accent: #6c5ce7;
     --accent-2: #00b894;
     --warn: #e17055;
@@ -51,42 +65,68 @@
     --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
     --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #4a3aa7; --cat-8: #e34948;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  /* Toda la página entra en una sola pantalla: el body no scrollea nunca;
+     lo que no entra (tablas largas, parties) scrollea dentro de su panel. */
+  html, body { height: 100%; }
   body {
     margin: 0;
-    background: var(--bg);
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--bg) url("Aldea_encantada_bajo_la_luna_llena_1.jpg") center / cover no-repeat;
     color: var(--text);
     font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.45;
-    padding-bottom: 60px;
   }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: var(--veil);
+    pointer-events: none;
+  }
+  .glass {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  /* El desenfoque en vivo es caro: va solo en los paneles chicos y quietos.
+     El panel principal (grande y con scroll adentro) usa un vidrio más opaco. */
+  .sidebar.glass, header.top.glass {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  main.glass { background: var(--glass-main); }
   header.top {
-    padding: 28px clamp(16px, 4vw, 48px) 18px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel);
-  }
-  .top-inner {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 10px 16px;
   }
   header.top h1 {
-    margin: 0 0 4px;
-    font-size: 1.6rem;
-    letter-spacing: -0.01em;
-  }
-  header.top p {
     margin: 0;
+    font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    min-width: 0;
+  }
+  .tag {
+    font-size: 0.68rem;
+    font-weight: 600;
     color: var(--muted);
-    font-size: 0.92rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
   .top-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex: none;
+    gap: 8px;
+    min-width: 0;
   }
 
   /* Reloj de reset (arriba a la derecha) */
@@ -141,49 +181,62 @@
   }
   :root[data-theme="light"] .theme-toggle .knob { transform: translateX(24px); }
   main {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 28px clamp(16px, 4vw, 48px);
+    min-height: 0;
+    padding: clamp(10px, 1.2vw, 18px);
   }
-  section {
-    margin-bottom: 42px;
-  }
-  section h2 {
-    font-size: 1.15rem;
-    margin: 0 0 4px;
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-  section h2 .tag {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
+  /* El título de cada vista se muestra arriba, en la barra (ver showView). */
+  section.view > h2 { display: none; }
   section > .desc {
     color: var(--muted);
-    font-size: 0.88rem;
-    margin: 0 0 16px;
-    max-width: 70ch;
+    font-size: 0.82rem;
+    margin: 0 0 10px;
+    flex: none;
   }
 
-  /* Boss cards */
+  /* Boss cards: la grilla ocupa el alto que queda y scrollea por dentro;
+     en pantallas anchas (ver más abajo) entran las 7 sin scrollear. */
   .boss-grid {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    align-content: start;
+    gap: 12px;
+    padding: 2px;
   }
   .boss-card {
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 16px 18px;
+    padding: 12px 14px;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 7px;
+    min-height: 0;
+  }
+  /* Cards compactas: título que no se pisa con el estado, los 7 días en una
+     sola fila y las notas en un renglón, para dejarle el alto a las parties. */
+  .boss-card .head { flex-wrap: wrap; align-items: center; }
+  .boss-card .head h3 { font-size: 0.98rem; line-height: 1.2; }
+  .boss-card .head select.status { flex: none; margin-left: auto; font-size: 0.66rem; padding: 2px 6px; }
+  .boss-card .title-row { flex: 0 1 auto; gap: 6px; }
+  .boss-card .boss-icon { width: 30px; height: 30px; }
+  .boss-card .diff-badge { height: 18px; }
+  .boss-card .day-row { flex-wrap: nowrap; }
+  .boss-card .day-row .day-chip { flex: 1 1 0; min-width: 0; padding: 3px 0; text-align: center; }
+  .boss-card > div:last-child { display: flex; align-items: baseline; gap: 8px; }
+  .boss-card > div:last-child .label { margin: 0; }
+  .boss-card > div:last-child .notes-field { flex: 1; min-width: 0; }
+  @media (min-width: 1360px) and (min-height: 680px) {
+    .boss-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      align-content: stretch;
+      overflow: hidden;
+    }
+    .boss-card .party-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
   }
   .boss-card .head {
     display: flex;
@@ -257,9 +310,11 @@
   .boss-card.dim { opacity: 0.32; filter: grayscale(0.5); }
   .boss-card.match { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
   .party-field.line-hide { display: none; }
-  .party-field { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  /* flex: none → cada party conserva su alto; si no entran, scrollea la lista
+     (sin esto se aplastaban y el texto de una quedaba encima de la otra). */
+  .party-field { flex: none; padding: 6px 0; border-bottom: 1px dashed var(--border); }
   .party-field:last-child { border-bottom: none; }
-  .party-members { display: block; }
+  .party-members { display: block; line-height: 1.4; }
   .party-note {
     display: flex;
     flex-wrap: wrap;
@@ -344,18 +399,19 @@
      snap por tarjeta. Cada persona tiene un color fijo (identidad), y el
      sub-selector de personaje toma prestado ese mismo color. */
   .person-scroll {
+    flex: none;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 6px 2px 14px;
-    margin-bottom: 2px;
+    padding: 4px 2px 8px;
     scroll-snap-type: x proximity;
     cursor: grab;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   .person-scroll::-webkit-scrollbar { display: none; }
+  .person-scroll[hidden] { display: none; }
   .person-scroll.dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
 
   .person-card {
@@ -432,6 +488,17 @@
     letter-spacing: 0.03em;
   }
   .person-card.active .pmeta { color: var(--pc-color, var(--accent)); }
+  /* En la tira de filtro van como píldoras, para no gastar alto de pantalla */
+  .person-scroll .person-card {
+    flex-direction: row;
+    width: auto;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 999px;
+  }
+  .person-scroll .person-card .avatar { width: 28px; height: 28px; font-size: 0.8rem; box-shadow: none; }
+  .person-scroll .person-card .check { width: 13px; height: 13px; font-size: 8px; line-height: 13px; }
+  .person-scroll .person-card .pname { font-size: 0.8rem; }
 
   /* Sub-selector de personaje: aparece "prendido" al color de la persona elegida */
   .char-picker {
@@ -440,8 +507,8 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 7px;
-    padding: 9px 12px;
-    margin: -4px 0 14px 2px;
+    padding: 6px 12px;
+    margin: 0 0 8px;
     background: var(--panel-2);
     border: 1px dashed var(--border);
     border-radius: 12px;
@@ -473,17 +540,20 @@
   .char-pill.active { background: var(--pc-color); border-color: var(--pc-color); color: #fff; font-weight: 600; }
   #person-summary {
     color: var(--muted);
-    font-size: 0.86rem;
-    margin: 0;
+    font-size: 0.82rem;
+    margin: 0 0 8px;
     min-height: 1.2em;
+    flex: none;
   }
 
-  /* Tables */
+  /* Tables: scrollean dentro de su panel, con el encabezado fijo */
   .table-wrap {
-    overflow-x: auto;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: auto;
     border: 1px solid var(--border);
     border-radius: 12px;
-    background: var(--panel);
+    background: var(--card);
     box-shadow: var(--shadow);
   }
   table {
@@ -506,6 +576,7 @@
     color: var(--muted);
     position: sticky;
     top: 0;
+    z-index: 1;
   }
   tr:last-child td { border-bottom: none; }
   td[contenteditable] {
@@ -519,7 +590,6 @@
   }
   td.rowhead {
     font-weight: 600;
-    background: var(--panel);
     white-space: nowrap;
   }
   tr.no-party td {
@@ -528,24 +598,17 @@
     opacity: 0.6;
   }
 
-  footer.bar {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 0 clamp(16px, 4vw, 48px);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    color: var(--muted);
-    font-size: 0.78rem;
-  }
   button#reset {
-    background: transparent;
+    flex: none;
+    width: 30px;
+    height: 28px;
+    background: var(--panel-2);
     border: 1px solid var(--border);
     color: var(--muted);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: 0.78rem;
+    border-radius: 999px;
+    padding: 0;
+    font-size: 0.9rem;
+    line-height: 1;
     cursor: pointer;
   }
   button#reset:hover { border-color: var(--warn); color: var(--warn); }
@@ -555,12 +618,14 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px 16px;
-    margin-bottom: 12px;
+    gap: 8px 16px;
+    margin-bottom: 10px;
     font-size: 0.82rem;
     color: var(--muted);
+    flex: none;
   }
   .mesos-controls label { display: flex; align-items: center; gap: 6px; }
+  .mesos-controls label[hidden] { display: none; }
   .mesos-controls select,
   .mesos-table select {
     border: 1px solid var(--border);
@@ -598,48 +663,126 @@
     padding: 6px 12px;
   }
   .mesos-table .share { font-weight: 700; color: var(--text); }
-  .mesos-table tfoot td { font-weight: 700; border-top: 1px solid var(--border); border-bottom: none; }
+  .mesos-table tfoot { position: sticky; bottom: 0; z-index: 1; }
+  .mesos-table tfoot td { font-weight: 700; border-top: 1px solid var(--border); border-bottom: none; background: var(--panel-2); }
+  .mesos-table td, .runs-table td { padding-top: 6px; padding-bottom: 6px; }
   .mesos-table tfoot .num { color: var(--accent-2); font-size: 1rem; }
-  #mesos-player {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 12px;
-    font-size: 0.82rem;
-    color: var(--muted);
-    align-items: center;
+  /* Mini dashboard del jugador (izquierda) + detalle de la mula elegida (derecha) */
+  .mesos-layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(250px, 330px) minmax(0, 1fr);
+    gap: 12px;
   }
-  #mesos-player .pj {
-    background: var(--panel-2);
+  .mesos-detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .mesos-dash {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    padding: 12px;
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 3px 10px;
-    color: var(--text);
-    cursor: pointer;
-    font: inherit;
+    border-radius: 12px;
   }
-  #mesos-player .pj.active { border-color: var(--accent); }
-  #mesos-player .pj b { font-variant-numeric: tabular-nums; }
-  #mesos-player .player-total { font-weight: 700; color: var(--text); margin-right: 4px; }
-  #mesos-player .player-total b { color: var(--accent-2); font-variant-numeric: tabular-nums; }
-
-  /* Quién está viendo */
-  .viewer-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font: inherit;
-    font-size: 0.8rem;
+  .dash-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex: none; }
+  .dash-head strong { font-size: 1rem; }
+  .dash-label {
+    font-size: 0.64rem;
     font-weight: 700;
-    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .dash-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: none; }
+  .dash-tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 8px 10px;
     background: var(--panel-2);
     border: 1px solid var(--border);
-    padding: 6px 12px;
-    border-radius: 999px;
+    border-radius: 10px;
+  }
+  .dash-tile.hero { grid-column: 1 / -1; }
+  .dash-tile .v { font-size: 1.15rem; font-weight: 700; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  .dash-tile.hero .v { font-size: 1.7rem; }
+  .dash-tile .s { font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mule-list { flex: 0 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 2px; }
+  .mule-row {
+    flex: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    align-items: baseline;
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.84rem;
     cursor: pointer;
   }
-  .viewer-btn:hover { border-color: var(--accent); }
-  .viewer-btn .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pc-color, var(--muted)); }
+  .mule-row:hover { background: var(--panel-2); }
+  .mule-row.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .mule-row .mule-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mule-row .mule-val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mule-row .mule-val small { color: var(--muted); font-size: 0.7rem; }
+  .mule-row .mule-bar { grid-column: 1 / -1; height: 6px; border-radius: 4px; background: var(--panel-2); overflow: hidden; }
+  .mule-row:hover .mule-bar, .mule-row.active .mule-bar { background: var(--border); }
+  .mule-row .mule-bar span { display: block; height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--accent); }
+  .mule-row.zero .mule-bar span { display: none; }
+  @media (max-width: 1000px) {
+    .mesos-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .dash-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .dash-tile.hero { grid-column: auto; }
+    .dash-tile.hero .v { font-size: 1.15rem; }
+    .mule-list { flex: none; max-height: 96px; }
+  }
+  @media (max-width: 700px) {
+    .dash-tiles { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Quién está viendo (tarjeta de la barra lateral) */
+  .viewer-btn {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .viewer-btn:hover { border-color: var(--pc-color, var(--accent)); background: var(--panel-2); }
+  .viewer-btn .dot {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    background: var(--pc-color, var(--muted));
+    box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--pc-color, var(--border));
+  }
+  .viewer-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+  .viewer-text small { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .viewer-name { font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .viewer-swap { color: var(--muted); font-size: 0.9rem; }
   .viewer-gate {
     position: fixed;
     inset: 0;
@@ -648,8 +791,7 @@
     align-items: center;
     justify-content: center;
     padding: 16px;
-    background: rgba(8, 9, 14, 0.72);
-    backdrop-filter: blur(6px);
+    background: rgba(8, 9, 14, 0.8);
   }
   .viewer-gate[hidden] { display: none; }
   .viewer-dialog {
@@ -665,7 +807,51 @@
   }
   .viewer-dialog h2 { margin: 0 0 6px; font-size: 1.3rem; }
   .viewer-dialog p { margin: 0 0 18px; color: var(--muted); font-size: 0.88rem; }
-  .viewer-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  /* Sin sesión: solo el fondo, el reproductor y el login. El reproductor
+     queda por encima del velo del login para que se pueda usar. */
+  .logged-out .content,
+  .logged-out .sidebar > :not(.player),
+  .logged-out .sidebar::before { display: none; }
+  .logged-out .sidebar {
+    z-index: 60;
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    pointer-events: none;
+    justify-content: flex-end;
+  }
+  .logged-out .player { pointer-events: auto; background: var(--glass); }
+  .logged-out .viewer-gate { background: none; }
+  .logged-out .viewer-dialog { background: var(--glass); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); }
+  .viewer-dialog { width: min(380px, 100%); }
+  .login-form { display: flex; flex-direction: column; gap: 12px; }
+  .login-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+  .login-form input {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 0.95rem;
+  }
+  .login-form input:focus { outline: none; border-color: var(--accent); }
+  .login-form button {
+    margin-top: 4px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--glow));
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .login-form button:hover { filter: brightness(1.08); }
+  .viewer-dialog .login-error { margin: 0; color: var(--danger); font-size: 0.82rem; }
+  .login-error[hidden] { display: none; }
   .viewer-close {
     position: absolute;
     top: 12px;
@@ -686,11 +872,92 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 14px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-size: 0.88rem;
     color: var(--muted);
+    flex: none;
   }
   .runs-progress strong { color: var(--text); }
+  .runs-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+  .runs-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .runs-tab:hover { color: var(--text); }
+  .runs-tab.active { background: var(--accent); color: #fff; }
+  .runs-tab-count {
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+  .boss-filter { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 10px; color: var(--muted); }
+  .boss-filter #person-summary { margin: 0; }
+
+  /* Diario de pitches */
+  .drop-form { flex: none; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-bottom: 10px; }
+  .drop-form label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .drop-form label.grow { flex: 1 1 160px; }
+  .drop-form input, .drop-form select {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 0.88rem;
+    min-width: 0;
+  }
+  .drop-form button {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .drops-table td { vertical-align: middle; padding-top: 6px; padding-bottom: 6px; }
+  .drops-table .boss-name { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+  .drops-table .boss-name img { width: 22px; height: 22px; }
+  .drops-table .drop-item { font-weight: 700; color: var(--glow); }
+  .drops-table .drop-when { color: var(--muted); font-size: 0.82rem; white-space: nowrap; }
+  .drops-table .drop-del { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; }
+  .drops-table .drop-del:hover { color: var(--danger); }
+  .runs-mules { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+  .runs-mules select {
+    max-width: 240px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font: inherit;
+    cursor: pointer;
+  }
+  /* Con una mula elegida sobra la columna "Mula" */
+  .runs-table.one-mule th:nth-child(3), .runs-table.one-mule tr:not(:has(.runs-empty)) td:nth-child(3) { display: none; }
+  /* En la pestaña Solo no hay compañeros: se esconde la columna "Con" */
+  .runs-table.solo-tab th:nth-child(4), .runs-table.solo-tab tr:not(:has(.runs-empty)) td:nth-child(4) { display: none; }
   .runs-bar {
     flex: 1 1 200px;
     max-width: 360px;
@@ -738,79 +1005,328 @@
 
   /* Barra lateral + vistas */
   .app {
+    position: relative;
+    height: 100dvh;
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    max-width: 1440px;
-    margin: 0 auto;
+    grid-template-columns: clamp(236px, 19vw, 292px) minmax(0, 1fr);
+    gap: var(--gap);
+    padding: var(--gap);
   }
-  .app > main { max-width: none; margin: 0; min-width: 0; }
+  .content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--gap);
+    min-width: 0;
+    min-height: 0;
+  }
   .sidebar {
-    position: sticky;
-    top: 0;
-    align-self: start;
-    height: 100vh;
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 24px 12px;
-    border-right: 1px solid var(--border);
+    gap: 12px;
+    padding: 16px 12px 12px;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
   }
-  .nav-item {
+  .sidebar::-webkit-scrollbar { display: none; }
+  /* Resplandor de la luna/calabazas en la esquina de la barra */
+  .sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(130% 42% at 0% 0%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 70%),
+      radial-gradient(90% 30% at 100% 100%, color-mix(in srgb, var(--glow) 18%, transparent), transparent 70%);
+  }
+  .sidebar > * { position: relative; }
+
+  .brand { display: flex; align-items: center; gap: 12px; padding: 2px 4px 4px; flex: none; }
+  .brand-logo {
+    flex: none;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--glow));
+    box-shadow: 0 6px 18px -6px var(--glow), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .brand-text strong { font-size: 1.12rem; letter-spacing: -0.01em; }
+  .brand-text span { font-size: 0.72rem; color: var(--muted); }
+
+  .nav { display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .nav-heading {
+    margin: 4px 8px 0;
+    font-size: 0.64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     width: 100%;
     text-align: left;
     background: transparent;
     border: 1px solid transparent;
     color: var(--muted);
     font: inherit;
-    font-size: 0.92rem;
+    font-size: 0.96rem;
     font-weight: 600;
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 8px 10px;
+    border-radius: 14px;
     cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
   }
-  .nav-item:hover { background: var(--panel-2); color: var(--text); }
+  .nav-item:hover { background: var(--card); border-color: var(--border); color: var(--text); transform: translateX(2px); }
   .nav-item.active {
-    background: var(--panel-2);
-    border-color: var(--border);
     color: var(--text);
-    box-shadow: inset 3px 0 0 var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 42%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+    box-shadow: 0 8px 22px -12px var(--accent);
   }
-  .nav-ico { width: 20px; text-align: center; }
-  .nav-label { flex: 1; }
+  .nav-ico {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .nav-item.active .nav-ico {
+    background: linear-gradient(135deg, var(--accent), var(--glow));
+    border-color: transparent;
+    box-shadow: 0 4px 12px -4px var(--glow);
+  }
+  .nav-label { flex: 1; min-width: 0; }
   .nav-badge {
-    background: var(--accent);
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 700;
+    background: var(--glow);
+    color: #1a1020;
+    font-size: 0.72rem;
+    font-weight: 800;
     border-radius: 999px;
-    padding: 1px 7px;
+    padding: 1px 8px;
     font-variant-numeric: tabular-nums;
   }
   .nav-badge[hidden] { display: none; }
-  .sidebar-foot { margin: auto 0 0; padding: 12px; font-size: 0.72rem; color: var(--muted); }
+  .sidebar-foot { margin: 0; padding: 0 6px; font-size: 0.68rem; color: var(--muted); flex: none; }
   section.view { display: none; }
-  section.view.active { display: block; }
+  section.view.active { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
-  @media (max-width: 820px) {
-    .app { grid-template-columns: minmax(0, 1fr); }
+  /* Reloj de la semana / reset + acciones, justo arriba del reproductor */
+  .side-info { flex: none; margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+  .side-info .reset-timer {
+    flex-wrap: wrap;
+    gap: 2px 5px;
+    white-space: normal;
+    border-radius: 12px;
+    padding: 6px 10px;
+    font-size: 0.74rem;
+    line-height: 1.3;
+  }
+  .side-actions { display: flex; align-items: center; gap: 6px; }
+  .logout-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* Reproductor de música */
+  .player {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 20%, transparent), var(--card));
+  }
+  .player-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .player-eq {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    padding: 9px 0;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+  }
+  .player-eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--glow); transform: scaleY(0.3); transform-origin: bottom; }
+  .player.playing .player-eq i { animation: eq .9s ease-in-out infinite alternate; }
+  .player.playing .player-eq i:nth-child(2) { animation-delay: -.3s; }
+  .player.playing .player-eq i:nth-child(3) { animation-delay: -.6s; }
+  @keyframes eq { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+  .player-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+  .player-title { font-size: 0.86rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-sub { font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .player input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    margin: 4px 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--glow) var(--fill, 0%), var(--border) var(--fill, 0%));
+    cursor: pointer;
+  }
+  .player input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 2px var(--glow);
+  }
+  .player input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 2px var(--glow);
+  }
+  .player-ctrl { display: flex; align-items: center; gap: 4px; }
+  .player-ctrl button {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .player-ctrl button:hover { background: var(--panel-2); border-color: var(--border); }
+  .player-ctrl button svg { width: 15px; height: 15px; fill: currentColor; }
+  .player-ctrl .player-play {
+    width: 36px;
+    height: 36px;
+    color: #1a1020;
+    background: linear-gradient(135deg, var(--glow), #ffd27a);
+    box-shadow: 0 4px 14px -4px var(--glow);
+  }
+  .player-ctrl .player-play:hover { background: linear-gradient(135deg, var(--glow), #ffd27a); filter: brightness(1.08); }
+  .player .ico-pause, .player.playing .ico-play { display: none; }
+  .player.playing .ico-pause { display: block; }
+  .player.muted .player-mute { color: var(--muted); }
+  .player-ctrl .player-vol { flex: 1; min-width: 0; margin-left: 2px; }
+
+  @media (max-height: 820px) {
+    .nav-heading, .sidebar-foot { display: none; }
+  }
+  /* Pantallas bajas: se achica el aire para que la barra entre sin scrollear */
+  @media (max-height: 700px) {
+    .sidebar { gap: 8px; padding-top: 12px; }
+    .nav-heading, .sidebar-foot { display: none; }
+    .nav { gap: 4px; }
+    .nav-item { padding: 5px 10px; }
+    .nav-ico { width: 32px; height: 32px; font-size: 1rem; }
+    .brand-logo { width: 38px; height: 38px; font-size: 1.25rem; }
+    .player { padding: 8px 10px; gap: 4px; }
+    section > .desc { display: none; }
+  }
+
+  /* Tablet / ventana angosta: la barra se vuelve un riel de íconos */
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 84px minmax(0, 1fr); }
+    .sidebar { align-items: center; padding: 12px 6px; gap: 10px; }
+    .brand-text, .viewer-text, .viewer-swap, .nav-heading, .sidebar-foot,
+    .player-top, .player-seek, .player-vol, .player-ctrl .player-mute, .player-ctrl .player-prev { display: none; }
+    .brand { padding: 0; }
+    .viewer-btn { width: auto; padding: 5px; border-radius: 50%; }
+    .nav { width: 100%; }
+    .nav-item { flex-direction: column; gap: 4px; padding: 8px 2px; text-align: center; font-size: 0.66rem; line-height: 1.15; }
+    .nav-item:hover { transform: none; }
+    .nav-label { flex: none; }
+    .nav-badge { position: absolute; top: 2px; right: 6px; }
+    .player { padding: 8px 6px; border-radius: 14px; }
+    .player-ctrl { flex-direction: column; }
+    /* En el riel los relojes quedan en corto ("📅 7/10 4d 1h") y los botones apilados */
+    .chip-long, .logout-label { display: none; }
+    .side-info { width: 100%; align-items: center; }
+    .side-info .reset-timer { width: 100%; justify-content: center; text-align: center; padding: 5px 2px; font-size: 0.64rem; }
+    .side-actions { flex-direction: column; }
+    .logout-btn { flex: none; width: 30px; }
+  }
+
+  /* Celular: contenido arriba y la barra pasa a ser la barra de abajo */
+  @media (max-width: 700px) {
+    .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+    .content { order: 1; }
     .sidebar {
-      z-index: 20;
-      height: auto;
+      order: 2;
       flex-direction: row;
-      overflow-x: auto;
-      padding: 8px 16px;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      overflow: visible;
     }
-    .nav-item { width: auto; white-space: nowrap; padding: 8px 12px; }
-    .nav-item.active { box-shadow: inset 0 -3px 0 var(--accent); }
-    .sidebar-foot { display: none; }
-    .top-controls { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
-    .reset-timer { white-space: normal; flex-wrap: wrap; }
+    .sidebar::before, .brand { display: none; }
+    .logged-out .sidebar { align-items: flex-end; justify-content: flex-start; }
+    /* Sin desenfoque en la barra de abajo: así los relojes y acciones pueden
+       ubicarse arriba a la derecha, sobre la barra del título. */
+    .sidebar.glass { position: static; background: var(--glass-main); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .side-info {
+      position: absolute;
+      top: calc(var(--gap) + 7px);
+      right: calc(var(--gap) + 10px);
+      z-index: 5;
+      width: auto;
+      margin: 0;
+      flex-direction: row;
+    }
+    .side-info .reset-timer { width: auto; padding: 5px 8px; border-radius: 999px; }
+    .side-info .week-chip { display: none; }
+    .side-actions { flex-direction: row; }
+    header.top { min-height: 46px; padding-right: 210px; }
+    header.top .tag { display: none; }
+    .viewer-btn { order: 2; }
+    .viewer-btn .dot { width: 32px; height: 32px; }
+    .nav { order: 1; flex: 1; flex-direction: row; gap: 2px; min-width: 0; }
+    .nav-item { flex: 1 1 0; min-width: 0; padding: 4px 2px; font-size: 0.6rem; }
+    .nav-ico { width: 32px; height: 32px; font-size: 1rem; }
+    .nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .player { order: 3; margin-top: 0; padding: 4px; border-radius: 999px; }
+    .player-ctrl { flex-direction: row; }
+    .player-ctrl .player-next { display: none; }
+    section > .desc { display: none; }
+    .boss-grid { grid-template-columns: minmax(0, 1fr); }
   }
 
   /* Roster: personajes propios */
@@ -845,7 +1361,110 @@
     font-weight: 700;
     cursor: pointer;
   }
-  tr.me td.rowhead { color: var(--accent); }
+  /* Roster: una cartita por mula de quien está viendo */
+  .mule-cards {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    align-content: start;
+    gap: 12px;
+    padding: 2px;
+  }
+  .mule-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--pc-color, var(--accent));
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+  .mule-card-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mule-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+    background: var(--pc-color, var(--accent));
+  }
+  .mule-card-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+  .mule-card-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mule-card-title small { font-size: 0.7rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mule-remove {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .mule-remove:hover { color: var(--danger); border-color: var(--danger); }
+  .mule-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mule-fields label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .mule-fields label.wide { grid-column: 1 / -1; }
+  .mule-fields input {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font: inherit;
+    font-size: 0.88rem;
+  }
+  .mule-fields input:focus { outline: none; border-color: var(--pc-color, var(--accent)); }
+  .mule-colors { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mule-swatch {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: var(--sw);
+    cursor: pointer;
+    transition: transform .1s ease;
+  }
+  .mule-swatch:hover { transform: scale(1.15); }
+  .mule-swatch.active { border-color: var(--panel); box-shadow: 0 0 0 2px var(--sw); }
+  .mule-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .mule-card-foot b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .mule-card-foot button, .dash-add {
+    flex: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .mule-card-foot button:hover, .dash-add:hover { border-color: var(--accent); color: var(--accent); }
+  .dash-add { border-style: dashed; padding: 6px 10px; }
+  .mule-empty { grid-column: 1 / -1; color: var(--muted); text-align: center; padding: 22px 12px; }
   .added-char {
     display: inline-flex;
     align-items: center;
@@ -880,49 +1499,81 @@
 </head>
 <body>
 
-<header class="top">
-  <div class="top-inner">
-    <div>
-      <h1>🗡️ Gestión de Parties · Bosses</h1>
-      <p>Parties, runs y mesos de la semana — cada uno ve y guarda lo suyo.</p>
+<div class="app">
+  <aside class="sidebar glass">
+    <div class="brand">
+      <span class="brand-logo">🗡️</span>
+      <div class="brand-text"><strong>Bossing Imanity</strong><span>Parties, runs y mesos</span></div>
     </div>
-    <div class="top-controls">
-      <button type="button" class="viewer-btn" id="viewer-btn"><span class="dot"></span><span class="viewer-name">¿Quién sos?</span></button>
+
+    <button type="button" class="viewer-btn" id="viewer-btn" title="Elegí quién sos">
+      <span class="dot">?</span>
+      <span class="viewer-text"><small>Jugando como</small><span class="viewer-name">¿Quién sos?</span></span>
+      <span class="viewer-swap" aria-hidden="true">⇄</span>
+    </button>
+
+    <nav class="nav" aria-label="Secciones">
+      <p class="nav-heading">Secciones</p>
+      <button type="button" class="nav-item" data-view="horarios"><span class="nav-ico">🗓️</span><span class="nav-label">Mis runs</span><span class="nav-badge" id="nav-runs-badge" hidden></span></button>
+      <button type="button" class="nav-item" data-view="bosses"><span class="nav-ico">⚔️</span><span class="nav-label">Bosses</span></button>
+      <button type="button" class="nav-item" data-view="mesos"><span class="nav-ico">💰</span><span class="nav-label">Info de mulas</span></button>
+      <button type="button" class="nav-item" data-view="diario"><span class="nav-ico">📖</span><span class="nav-label">Diario de pitches</span></button>
+      <button type="button" class="nav-item" data-view="roster"><span class="nav-ico">👥</span><span class="nav-label">Roster</span></button>
+    </nav>
+
+    <div class="side-info">
       <span class="reset-timer week-chip" id="week-chip" title="La semana de bosses arranca el miércoles con el reset de las 7:00 pm, hora Colombia"></span>
       <span class="reset-timer" id="reset-timer" title="Reset diario a las 7:00 pm, hora Colombia"></span>
-      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
-        <span class="knob" id="theme-knob">🌙</span>
-      </button>
+      <div class="side-actions">
+        <button id="reset" type="button" title="Restablecer todo: borra tus cambios guardados en este navegador" aria-label="Restablecer todo">↺</button>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
+          <span class="knob" id="theme-knob">🌙</span>
+        </button>
+        <button type="button" class="logout-btn" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión"><span aria-hidden="true">⏻</span><span class="logout-label">Salir</span></button>
+      </div>
     </div>
-  </div>
+
+    <div class="player" id="player">
+      <div class="player-top">
+        <span class="player-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div class="player-meta">
+          <span class="player-title" id="player-title"></span>
+          <span class="player-sub" id="player-sub"></span>
+        </div>
+      </div>
+      <input type="range" class="player-seek" id="player-seek" min="0" max="1000" value="0" aria-label="Posición de la pista">
+      <div class="player-ctrl">
+        <button type="button" class="player-prev" id="player-prev" aria-label="Pista anterior"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+        <button type="button" class="player-play" id="player-play" aria-label="Reproducir música">
+          <svg class="ico-play" viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z"/></svg>
+          <svg class="ico-pause" viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>
+        </button>
+        <button type="button" class="player-next" id="player-next" aria-label="Pista siguiente"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2l8 6-8 6z"/></svg></button>
+        <button type="button" class="player-mute" id="player-mute" aria-label="Silenciar"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2zM11 5.2a4 4 0 010 5.6l-.9-.9a2.7 2.7 0 000-3.8z"/></svg></button>
+        <input type="range" class="player-vol" id="player-vol" min="0" max="1" step="0.05" value="0.1" aria-label="Volumen">
+      </div>
+    </div>
+
+    <p class="sidebar-foot">Todo se guarda en este navegador, separado por persona.</p>
+  </aside>
+
+<div class="content">
+<header class="top glass">
+  <h1 id="view-title"></h1>
 </header>
 
-<div class="app">
-  <nav class="sidebar" aria-label="Secciones">
-    <button type="button" class="nav-item" data-view="horarios"><span class="nav-ico">🗓️</span><span class="nav-label">Mis runs</span><span class="nav-badge" id="nav-runs-badge" hidden></span></button>
-    <button type="button" class="nav-item" data-view="bosses"><span class="nav-ico">⚔️</span><span class="nav-label">Bosses</span></button>
-    <button type="button" class="nav-item" data-view="mesos"><span class="nav-ico">💰</span><span class="nav-label">Mesos por mula</span></button>
-    <button type="button" class="nav-item" data-view="roster"><span class="nav-ico">👥</span><span class="nav-label">Roster</span></button>
-    <p class="sidebar-foot">Todo se guarda en este navegador, separado por persona.</p>
-  </nav>
-
-<main>
+<main class="glass">
 
   <!-- ROSTER -->
   <section id="roster" class="view">
-    <h2>Roster <span class="tag">Personas y personajes</span></h2>
-    <p class="desc">De esta lista sale todo el resto de la página: los chips de "¿Quién sos?", los mesos y tus runs. La base es fija; vos podés sumar tus propios personajes (se guardan solo en tu navegador). Tachados: sin parties por ahora.</p>
+    <h2>Roster <span class="tag">Tus mulas</span></h2>
+    <p class="desc">Una cartita por cada mula tuya: ponele nombre, nivel y CP (se guardan solo en tu navegador). Las mulas de la base son fijas; las que sumes vos se pueden quitar.</p>
     <form class="add-char" id="add-char" hidden>
-      <label for="add-char-name">Agregar personaje a <strong id="add-char-who"></strong></label>
-      <input type="text" id="add-char-name" placeholder="Ej: Hero, Mercedes…" maxlength="40" autocomplete="off" required>
+      <label for="add-char-name">Agregar mula a <strong id="add-char-who"></strong></label>
+      <input type="text" id="add-char-name" placeholder="Clase. Ej: Hero, Mercedes…" maxlength="40" autocomplete="off" required>
       <button type="submit">＋ Agregar</button>
     </form>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th style="width:22%">Jugador</th><th>Clase(s)</th></tr></thead>
-        <tbody id="roster-body"></tbody>
-      </table>
-    </div>
+    <div class="mule-cards" id="mule-cards"></div>
   </section>
 
   <!-- BOSSES / PARTIES -->
@@ -931,8 +1582,10 @@
     <p class="desc">Composición y notas por boss. Click en el estado para cambiarlo.</p>
 
     <div class="person-scroll" id="person-chips"></div>
-    <div id="char-chips"></div>
-    <p id="person-summary">Elegí tu nombre y, si tenés más de un personaje, cuál usás.</p>
+    <div class="boss-filter">
+      <div id="char-chips"></div>
+      <p id="person-summary"></p>
+    </div>
 
     <div class="boss-grid">
 
@@ -1057,8 +1710,11 @@
 
   <!-- MESOS POR MULA -->
   <section id="mesos" class="view">
-    <h2>Mesos por mula <span class="tag">Cristales semanales</span></h2>
-    <p class="desc">Elegí jugador y mula: arranca con lo que ya hace según las parties de arriba, y podés cambiar la dificultad, el tamaño de la party o sumar otros bosses. El meso del cristal se reparte en partes iguales entre los integrantes. Limbo, Malefic, Adversary y Baldrix van como máximo en trío.</p>
+    <h2>Información de mulas <span class="tag">Mesos y cristales</span></h2>
+    <p class="desc">A la izquierda, el resumen de mesos del jugador; tocá una mula para ver su detalle. Cada mula arranca con lo que ya hace según las parties y podés cambiar la dificultad, el tamaño de la party o sumar otros bosses. El cristal se reparte en partes iguales; Limbo, Malefic, Adversary y Baldrix van como máximo en trío.</p>
+    <div class="mesos-layout">
+    <aside class="mesos-dash" id="mesos-dash" aria-label="Resumen de mesos del jugador"></aside>
+    <div class="mesos-detail">
     <div class="mesos-controls">
       <label>Jugador <select id="mesos-person"></select></label>
       <label>Mula <select id="mesos-char"></select></label>
@@ -1091,7 +1747,36 @@
         </tfoot>
       </table>
     </div>
-    <div id="mesos-player"></div>
+    </div>
+    </div>
+  </section>
+
+  <!-- DIARIO DE PITCHES: lo que va cayendo cada semana -->
+  <section id="diario" class="view">
+    <h2>Diario de pitches <span class="tag">Drops por semana</span></h2>
+    <p class="desc">Anotá lo que te cae cada semana: boss, qué cayó y a qué mula. Queda guardado por semana (solo en tu navegador) para ver el historial.</p>
+    <form class="drop-form" id="drop-form" autocomplete="off">
+      <label><span class="dash-label">Fecha</span><input type="date" id="drop-date" required></label>
+      <label><span class="dash-label">Boss</span><select id="drop-boss"></select></label>
+      <label><span class="dash-label">Qué cayó</span><input type="text" id="drop-item" list="drop-items" maxlength="40" placeholder="Ej: Black Heart" required></label>
+      <datalist id="drop-items">
+        <option value="Black Heart"><option value="Berserked"><option value="Magic Eyepatch"><option value="Dreamy Belt">
+        <option value="Cursed Spellbook"><option value="Source of Suffering"><option value="Genesis Badge">
+        <option value="Commanding Force Earring"><option value="Endless Terror"><option value="Mitra's Rage">
+        <option value="Anillo de Limbo"><option value="Anillo de Malefic"><option value="Medalla"><option value="Hammer">
+        <option value="Emblema"><option value="Grindstone"><option value="Vestigio">
+      </datalist>
+      <label><span class="dash-label">Mula</span><select id="drop-char"></select></label>
+      <label class="grow"><span class="dash-label">Nota</span><input type="text" id="drop-note" maxlength="80" placeholder="Opcional"></label>
+      <button type="submit">＋ Anotar</button>
+    </form>
+    <div class="runs-progress" id="drop-summary"></div>
+    <div class="table-wrap">
+      <table class="drops-table">
+        <thead><tr><th>Fecha</th><th>Boss</th><th>Qué cayó</th><th>Mula</th><th>Nota</th><th style="width:44px"></th></tr></thead>
+        <tbody id="drop-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <!-- MIS RUNS: HORARIOS + CHECKLIST -->
@@ -1118,20 +1803,21 @@
 
 </main>
 </div>
+</div>
 
 <div class="viewer-gate" id="viewer-gate" hidden>
   <div class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
     <button type="button" class="viewer-close" id="viewer-close" aria-label="Cerrar">✕</button>
-    <h2 id="viewer-title">¿Quién está viendo la página?</h2>
-    <p>Cada uno tiene su propio gestor de bosses: horarios, checklist de runs, notas y mesos se guardan por persona en este navegador.</p>
-    <div class="viewer-grid" id="viewer-grid"></div>
+    <h2 id="viewer-title">Iniciar sesión</h2>
+    <p>Entrá con tu usuario para ver lo tuyo: runs, mulas, notas y mesos se guardan por persona en este navegador.</p>
+    <form class="login-form" id="login-form" autocomplete="off">
+      <label>Usuario <input type="text" id="login-user" maxlength="30" autocapitalize="none" spellcheck="false" required></label>
+      <label>Contraseña <input type="password" id="login-pass" maxlength="60" required></label>
+      <p class="login-error" id="login-error" role="alert" hidden>Usuario o contraseña incorrectos.</p>
+      <button type="submit">Entrar</button>
+    </form>
   </div>
 </div>
-
-<footer class="bar">
-  <span>Los cambios se guardan automáticamente en este navegador (localStorage).</span>
-  <button id="reset">Restablecer todo</button>
-</footer>
 
 <script>
   // --- Roster fijo: única fuente de verdad para el roster y para "¿Quién sos?" ---
@@ -1156,6 +1842,7 @@
   try { VIEWER = localStorage.getItem(VIEWER_KEY); } catch (e) {}
   if (VIEWER && !ROSTER.some(p => p.name === VIEWER)) VIEWER = null;
   const PREFIX = VIEWER ? `bp_u-${VIEWER}_` : "bp_";
+  document.documentElement.classList.toggle("logged-out", !VIEWER);
 
   // Personajes que agregó quien está viendo (solo existen en su navegador):
   // se suman a su fila del roster, así aparecen en filtros, mesos y runs.
@@ -1177,39 +1864,6 @@
     location.reload();
   }
 
-  // --- Roster: base fija + los personajes agregados de quien está viendo ---
-  const rosterBody = document.getElementById("roster-body");
-  ROSTER.forEach(p => {
-    const tr = document.createElement("tr");
-    const tdName = document.createElement("td");
-    tdName.className = "rowhead";
-    tdName.textContent = p.name;
-    const tdClass = document.createElement("td");
-    tdClass.textContent = BASE_CLASSES[p.name].join(", ");
-    if (p.name === VIEWER) {
-      MY_CHARS.forEach(c => {
-        const pill = document.createElement("span");
-        pill.className = "added-char";
-        pill.title = "Lo agregaste vos (solo se ve en este navegador)";
-        pill.append(c);
-        const x = document.createElement("button");
-        x.type = "button";
-        x.textContent = "✕";
-        x.setAttribute("aria-label", `Quitar ${c}`);
-        x.addEventListener("click", () => {
-          if (confirm(`¿Quitar a ${c} de tus personajes?`)) saveMyChars(MY_CHARS.filter(m => m !== c));
-        });
-        pill.appendChild(x);
-        tdClass.appendChild(pill);
-      });
-    }
-    tr.appendChild(tdName);
-    tr.appendChild(tdClass);
-    tr.dataset.person = p.name;
-    tr.classList.toggle("me", p.name === VIEWER);
-    rosterBody.appendChild(tr);
-  });
-
   // Formulario para sumar un personaje propio.
   const addCharForm = document.getElementById("add-char");
   if (VIEWER) {
@@ -1222,7 +1876,7 @@
       if (!name) return;
       const all = getPersonClassList(VIEWER);
       if (all.some(c => c.toLowerCase() === name.toLowerCase())) {
-        input.setCustomValidity("Ya tenés ese personaje");
+        input.setCustomValidity("Ya tenés esa mula");
         input.reportValidity();
         return;
       }
@@ -1376,15 +2030,6 @@
     if (note) { renderNoteTags(note); renderVest(line, note); }
   });
 
-  // --- Roster: tachar a quien no está en ninguna party ---
-  // Se calcula de las parties, así que si alguien vuelve a una se destacha solo.
-  const partyText = [...document.querySelectorAll(".party-members")].map(m => m.textContent).join(" ");
-  rosterBody.querySelectorAll("tr").forEach(tr => {
-    const inParty = partyText.includes(`${tr.dataset.person} (`);
-    tr.classList.toggle("no-party", !inParty);
-    if (!inParty) tr.title = "Sin parties por ahora";
-  });
-
   function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -1442,14 +2087,6 @@
     return btn;
   }
 
-  function makeCharPill(label, active, onClick) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "char-pill" + (active ? " active" : "");
-    btn.textContent = label;
-    btn.addEventListener("click", onClick);
-    return btn;
-  }
 
   // Arrastre con mouse para scrollear la tira de avatares (como un carrusel).
   // El touch ya scrollea nativo; esto solo suma el drag de mouse en desktop,
@@ -1498,6 +2135,13 @@
     setPersonSelection("");
     setClassSelection("");
   }
+  // Con "Jugando como X" elegido, Bosses muestra solo lo de esa persona: se
+  // esconde la tira de personas y queda nada más el selector de sus mulas.
+  if (VIEWER) {
+    personChipWrap.dataset.selected = VIEWER;
+    personChipWrap.hidden = true;
+    if (!getPersonClassList(VIEWER).includes(charChipWrap.dataset.selected)) charChipWrap.dataset.selected = "";
+  }
 
   function renderPersonChips() {
     const selected = personChipWrap.dataset.selected || "";
@@ -1538,33 +2182,25 @@
     if (!person) return;
 
     const classList = getPersonClassList(person);
-    if (classList.length <= 1) return; // 1 solo pj: no hay nada que sub-elegir
+    // 1 solo pj: no hay nada que sub-elegir (salvo para quien está viendo,
+    // que igual ve su mula en la cartita).
+    if (classList.length <= 1 && !VIEWER) return;
 
     const selectedClass = charChipWrap.dataset.selected || "";
 
-    const picker = document.createElement("div");
-    picker.className = "char-picker";
-    picker.style.setProperty("--pc-color", colorForPerson(person));
-
-    const label = document.createElement("span");
-    label.className = "char-label";
-    label.textContent = "Personaje";
-    picker.appendChild(label);
-
-    picker.appendChild(makeCharPill("Todos sus pj", selectedClass === "", () => {
-      setClassSelection("");
-      renderCharChips();
+    // Desplegable (igual que en Mis runs) para que no crezca con muchas mulas.
+    const picker = document.createElement("label");
+    picker.className = "runs-mules";
+    picker.append("Mula ");
+    const sel = document.createElement("select");
+    if (classList.length > 1) sel.add(new Option("Todas", ""));
+    classList.forEach(cls => sel.add(new Option(cls, cls)));
+    sel.value = classList.length > 1 ? selectedClass : classList[0];
+    sel.addEventListener("change", () => {
+      setClassSelection(classList.length > 1 ? sel.value : "");
       applyFilter();
-    }));
-
-    classList.forEach(cls => {
-      picker.appendChild(makeCharPill(cls, cls === selectedClass, () => {
-        setClassSelection(charChipWrap.dataset.selected === cls ? "" : cls);
-        renderCharChips();
-        applyFilter();
-      }));
     });
-
+    picker.appendChild(sel);
     charChipWrap.appendChild(picker);
   }
 
@@ -1621,8 +2257,6 @@
     summary.textContent = matches
       ? `${label} está fijo en ${matches} part${matches === 1 ? "y" : "ys"}.`
       : `${label} todavía no tiene parties asignadas.`;
-
-    document.getElementById("bosses").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   renderPersonChips();
@@ -1688,11 +2322,11 @@
     if (diff > 0) {
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
-      resetTimerEl.innerHTML = `⏳ Faltan <strong>${h}h ${String(m).padStart(2, "0")}m</strong> para el reset`;
+      resetTimerEl.innerHTML = `⏳ <span class="chip-long">Faltan</span> <strong>${h}h ${String(m).padStart(2, "0")}m</strong> <span class="chip-long">para el reset</span>`;
     } else {
       const elapsed = -diff;
       const hoursSince = Math.floor(elapsed / 3600000) + 1; // 19:00–19:59 => +1, 20:00–20:59 => +2, etc.
-      resetTimerEl.innerHTML = `🔄 <strong>+${hoursSince}</strong> desde el reset`;
+      resetTimerEl.innerHTML = `🔄 <strong>+${hoursSince}</strong> <span class="chip-long">desde el reset</span>`;
     }
   }
   updateResetTimer();
@@ -1710,7 +2344,7 @@
     const msLeft = nextReset - Date.now();
     const d = Math.floor(msLeft / 86400000);
     const hLeft = Math.floor((msLeft % 86400000) / 3600000);
-    weekChipEl.innerHTML = `📅 Semana del mié <strong>${shortDate(WEEK_START)}</strong> · reset semanal en <strong>${d}d ${hLeft}h</strong>`;
+    weekChipEl.innerHTML = `📅 <span class="chip-long">Semana del mié</span> <strong>${shortDate(WEEK_START)}</strong> <span class="chip-long">· reset semanal en</span> <strong>${d}d ${hLeft}h</strong>`;
   }
   updateWeekChip();
   setInterval(updateWeekChip, 60000);
@@ -1742,6 +2376,10 @@
   const SIZE_NAMES = { 1: "Solo", 2: "Dúo", 3: "Trío", 4: "Cuarteto", 5: "Party de 5", 6: "Party de 6" };
   const BADGE_TO_DIFF = { Xtreme: "Extreme", Extreme: "Extreme", Chaos: "Chaos", Hard: "Hard", Normal: "Normal", Easy: "Easy" };
   const fmtMesos = n => Math.round(n).toLocaleString("es-CO");
+  // Versión corta para el dashboard: 30.087.045.417 → "30,09 B" (B = mil millones).
+  const fmtShort = n => n >= 1e9 ? (n / 1e9).toLocaleString("es-CO", { maximumFractionDigits: 2 }) + " B"
+    : n >= 1e6 ? (n / 1e6).toLocaleString("es-CO", { maximumFractionDigits: 1 }) + " M"
+    : fmtMesos(n);
 
   // Lo que ya hace esa mula según las parties de las cards: dificultad
   // (badge de la línea o de la card) y cuántos son en la party.
@@ -1808,7 +2446,7 @@
   const mesosTotalEl = document.getElementById("mesos-total");
   const mesosMonthRow = document.getElementById("mesos-month-row");
   const mesosMonthEl = document.getElementById("mesos-total-month");
-  const mesosPlayerEl = document.getElementById("mesos-player");
+  const mesosDashEl = document.getElementById("mesos-dash");
 
   ROSTER.forEach(p => mesosPersonSel.add(new Option(p.name, p.name)));
 
@@ -1887,26 +2525,89 @@
     mesosMonthRow.hidden = !t.month;
     mesosMonthEl.textContent = fmtMesos(t.month);
 
-    // Total del jugador sumando todas sus mulas (cada una con su propio estado).
-    mesosPlayerEl.innerHTML = "";
-    const classes = getPersonClassList(person);
-    const perChar = classes.map(c => [c, mesosTotal(loadMesosState(person, c))]);
-    const sumWeek = perChar.reduce((a, [, v]) => a + v.week, 0);
-    const sumMonth = perChar.reduce((a, [, v]) => a + v.month, 0);
-    const total = document.createElement("span");
-    total.className = "player-total";
-    total.innerHTML = `${person} en total: <b>${fmtMesos(sumWeek)}</b> /semana` +
-      (sumMonth ? ` · <b>${fmtMesos(sumMonth)}</b> /mes` : "");
-    mesosPlayerEl.appendChild(total);
-    perChar.forEach(([c, v]) => {
-      const pj = document.createElement("button");
-      pj.type = "button";
-      pj.className = "pj" + (c === cls ? " active" : "");
-      pj.innerHTML = `${c}: <b></b>`;
-      pj.querySelector("b").textContent = fmtMesos(v.week) + (v.month ? ` + ${fmtMesos(v.month)}/mes` : "");
-      pj.addEventListener("click", () => { mesosCharSel.value = c; renderMesos(); });
-      mesosPlayerEl.appendChild(pj);
+    renderMesosDash(person, cls);
+  }
+
+  // Mini dashboard del jugador: totales sumando todas sus mulas (cada una con
+  // su propio estado) y un ranking de mulas por mesos semanales. Tocar una
+  // mula la abre en la tabla de al lado.
+  function renderMesosDash(person, cls) {
+    const perChar = getPersonClassList(person).map(c => {
+      const state = loadMesosState(person, c);
+      const crystals = BOSS_MESOS.filter(b => state[b.id].on && !b.monthly).length;
+      return { cls: c, crystals, ...mesosTotal(state) };
     });
+    const sumWeek = perChar.reduce((a, m) => a + m.week, 0);
+    const sumMonth = perChar.reduce((a, m) => a + m.month, 0);
+    const active = perChar.filter(m => m.week || m.month).length;
+    const crystals = perChar.reduce((a, m) => a + m.crystals, 0);
+    const maxWeek = Math.max(...perChar.map(m => m.week), 1);
+
+    mesosDashEl.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "dash-head";
+    const who = document.createElement("strong");
+    who.textContent = person;
+    const sub = document.createElement("span");
+    sub.className = "dash-label";
+    sub.textContent = "Resumen de mesos";
+    head.append(who, sub);
+
+    const tiles = document.createElement("div");
+    tiles.className = "dash-tiles";
+    const tile = (label, value, small, hero) => {
+      const t = document.createElement("div");
+      t.className = "dash-tile" + (hero ? " hero" : "");
+      t.innerHTML = `<span class="dash-label"></span><span class="v"></span><span class="s"></span>`;
+      t.children[0].textContent = label;
+      t.children[1].textContent = value;
+      t.children[2].textContent = small;
+      t.title = `${label}: ${small}`;
+      tiles.appendChild(t);
+    };
+    tile("Total semanal", fmtShort(sumWeek), fmtMesos(sumWeek) + " mesos", true);
+    tile("Mensual", sumMonth ? fmtShort(sumMonth) : "—", sumMonth ? fmtMesos(sumMonth) + " mesos" : "Sin Black Mage");
+    tile("Promedio por mula", active ? fmtShort(sumWeek / active) : "—", "por semana");
+    tile("Mulas con bosses", `${active} de ${perChar.length}`, "con algún cristal");
+    tile("Cristales", String(crystals), "por semana");
+
+    const listLabel = document.createElement("span");
+    listLabel.className = "dash-label";
+    listLabel.textContent = "Mesos semanales por mula";
+    const list = document.createElement("div");
+    list.className = "mule-list";
+    [...perChar].sort((a, b) => b.week - a.week).forEach(m => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "mule-row" + (m.cls === cls ? " active" : "") + (m.week ? "" : " zero");
+      row.innerHTML = `<span class="mule-name"></span><span class="mule-val"></span><span class="mule-bar"><span></span></span>`;
+      row.children[0].textContent = m.cls;
+      row.children[1].textContent = m.week ? fmtShort(m.week) : "—";
+      if (m.month) {
+        const extra = document.createElement("small");
+        extra.textContent = ` +${fmtShort(m.month)}/mes`;
+        row.children[1].appendChild(extra);
+      }
+      row.querySelector(".mule-bar span").style.width = `${(m.week / maxWeek) * 100}%`;
+      row.title = `${m.cls}: ${fmtMesos(m.week)} /semana` + (m.month ? ` + ${fmtMesos(m.month)} /mes` : "") +
+        ` · ${m.crystals} cristal${m.crystals === 1 ? "" : "es"}`;
+      row.addEventListener("click", () => { mesosCharSel.value = m.cls; renderMesos(); });
+      list.appendChild(row);
+    });
+
+    mesosDashEl.append(head, tiles, listLabel, list);
+    // Sumar una mula se hace en el Roster; el botón lleva directo al formulario.
+    if (person === VIEWER) {
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "dash-add";
+      add.textContent = "＋ Agregar mula";
+      add.addEventListener("click", () => {
+        showView("roster");
+        document.getElementById("add-char-name").focus();
+      });
+      mesosDashEl.appendChild(add);
+    }
   }
 
   mesosPersonSel.addEventListener("change", () => { fillMesosChars(); renderMesos(); });
@@ -2022,6 +2723,16 @@
 
   const runsBody = document.getElementById("runs-body");
   const runsProgress = document.getElementById("runs-progress");
+  const runsTable = document.querySelector(".runs-table");
+  // Una run es "solo" si nadie más va en esa party (o si la marcaste como Solo
+  // a mano en Info de mulas).
+  const isSoloRun = r => r.withText ? r.withText === "Solo" : !r.partners.length;
+  const RUNS_TAB_KEY = PREFIX + "runs-tab";
+  const RUNS_MULE_KEY = PREFIX + "runs-mule";
+  let runsMule = "";
+  try { runsMule = localStorage.getItem(RUNS_MULE_KEY) || ""; } catch (e) {}
+  let runsTab = "party";
+  try { if (localStorage.getItem(RUNS_TAB_KEY) === "solo") runsTab = "solo"; } catch (e) {}
 
   function renderRuns() {
     const runs = runsFor(VIEWER);
@@ -2041,7 +2752,7 @@
         b.addEventListener("click", openGate);
         td.appendChild(b);
       } else {
-        td.textContent = `${VIEWER} no está en ninguna party por ahora. Podés sumar bosses a mano en Mesos por mula.`;
+        td.textContent = `${VIEWER} no está en ninguna party por ahora. Podés sumar bosses a mano en Info de mulas.`;
       }
       tr.appendChild(td);
       runsBody.appendChild(tr);
@@ -2050,8 +2761,71 @@
       return;
     }
 
+    // Pestañas: las runs en party y las que se hacen solo van por separado.
+    // Filtro por mula (o todas): achica la lista a las runs de un solo personaje.
+    const classes = getPersonClassList(VIEWER);
+    if (runsMule && !classes.includes(runsMule)) runsMule = "";
+    const shown = runsMule ? runs.filter(r => r.cls === runsMule) : runs;
+    // Es un desplegable (y no una píldora por mula) para que no crezca con 12 mulas.
+    const mules = document.createElement("label");
+    mules.className = "runs-mules";
+    mules.append("Mula ");
+    const muleSel = document.createElement("select");
+    [["", "Todas"], ...classes.map(c => [c, c])].forEach(([value, text]) => {
+      const mine = value ? runs.filter(r => r.cls === value) : runs;
+      const pending = mine.filter(r => !isRunDone(r.id)).length;
+      const state = !mine.length ? "sin runs" : pending ? `faltan ${pending}` : "✓ listas";
+      muleSel.add(new Option(`${text} · ${state}`, value));
+    });
+    muleSel.value = runsMule;
+    muleSel.addEventListener("change", () => {
+      runsMule = muleSel.value;
+      try { localStorage.setItem(RUNS_MULE_KEY, runsMule); } catch (e) {}
+      renderRuns();
+    });
+    mules.appendChild(muleSel);
+    runsTable.classList.toggle("one-mule", !!runsMule);
+
+    const counts = { party: shown.filter(r => !isSoloRun(r)), solo: shown.filter(isSoloRun) };
+    const tabRuns = counts[runsTab];
+    const tabs = document.createElement("div");
+    tabs.className = "runs-tabs";
+    tabs.setAttribute("role", "tablist");
+    [["party", "👥 En party"], ["solo", "🧍 Solo"]].forEach(([id, text]) => {
+      const pending = counts[id].filter(r => !isRunDone(r.id)).length;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(id === runsTab));
+      b.className = "runs-tab" + (id === runsTab ? " active" : "");
+      b.innerHTML = `${text} <span class="runs-tab-count"></span>`;
+      b.lastElementChild.textContent = pending ? `${pending} de ${counts[id].length}` : (counts[id].length ? "✓" : "0");
+      b.title = `${counts[id].length} runs, ${pending} pendientes`;
+      b.addEventListener("click", () => {
+        runsTab = id;
+        try { localStorage.setItem(RUNS_TAB_KEY, id); } catch (e) {}
+        renderRuns();
+      });
+      tabs.appendChild(b);
+    });
+    runsProgress.append(tabs, mules);
+    runsTable.classList.toggle("solo-tab", runsTab === "solo");
+
+    if (!tabRuns.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.className = "runs-empty";
+      const who = runsMule ? `${runsMule} no tiene` : "No tenés";
+      td.textContent = runsTab === "solo"
+        ? `${who} runs en solo. Podés sumar bosses a mano en Info de mulas.`
+        : `${who} runs en party por ahora.`;
+      tr.appendChild(td);
+      runsBody.appendChild(tr);
+    }
+
     let done = 0;
-    runs.forEach(r => {
+    tabRuns.forEach(r => {
       const sched = getRunSched(r.id);
       const isDone = isRunDone(r.id);
       if (isDone) done++;
@@ -2131,14 +2905,14 @@
       runsBody.appendChild(tr);
     });
 
-    const pct = Math.round((done / runs.length) * 100);
+    const pct = tabRuns.length ? Math.round((done / tabRuns.length) * 100) : 0;
     const label = document.createElement("span");
-    label.innerHTML = `<strong>${done} de ${runs.length}</strong> runs hechas · faltan <strong>${runs.length - done}</strong> · semana del mié ${shortDate(WEEK_START)}`;
+    label.innerHTML = `<strong>${done} de ${tabRuns.length}</strong> hechas · faltan <strong>${tabRuns.length - done}</strong> · semana del mié ${shortDate(WEEK_START)}`;
     const bar = document.createElement("div");
     bar.className = "runs-bar";
     bar.innerHTML = `<span style="width:${pct}%"></span>`;
     runsProgress.append(label, bar);
-    setNavBadge(runs.length - done);
+    setNavBadge(runs.filter(r => !isRunDone(r.id)).length); // el badge cuenta todas, party + solo
 
     renderCardDays(runs);
   }
@@ -2163,6 +2937,9 @@
         b.addEventListener("click", () => {
           const target = mine.find(r => getRunSched(r.id).day === d) || mine[0];
           if (!target) return;
+          runsTab = isSoloRun(target) ? "solo" : "party";
+          if (runsMule && runsMule !== target.cls) runsMule = "";
+          renderRuns();
           showView("horarios");
           const row = runsBody.querySelector(`tr[data-run="${CSS.escape(target.id)}"]`);
           if (!row) return;
@@ -2181,22 +2958,36 @@
   // horarios, checklist, estados, notas, mesos. Elegir recarga la página para
   // que todo se lea del espacio de esa persona.
   const gate = document.getElementById("viewer-gate");
-  const gateGrid = document.getElementById("viewer-grid");
   const gateClose = document.getElementById("viewer-close");
   const viewerBtn = document.getElementById("viewer-btn");
+  const loginForm = document.getElementById("login-form");
+  const loginUser = document.getElementById("login-user");
+  const loginPass = document.getElementById("login-pass");
+  const loginError = document.getElementById("login-error");
 
+  // Mini login: el usuario es el nombre del roster (sin importar mayúsculas)
+  // y la contraseña es ese mismo nombre tal cual está escrito ("Choscar").
+  // Es solo para que cada uno entre a lo suyo: todo vive en el navegador,
+  // no es seguridad de verdad.
   function openGate() {
-    gateGrid.innerHTML = "";
-    ROSTER.forEach(p => {
-      const n = getPersonClassList(p.name).length;
-      gateGrid.appendChild(makePersonCard(
-        p.name, p.name === VIEWER, colorForPerson(p.name), p.name[0].toUpperCase(),
-        `${n} PJ`, () => chooseViewer(p.name)
-      ));
-    });
+    loginForm.reset();
+    loginError.hidden = true;
     gateClose.hidden = !VIEWER;
     gate.hidden = false;
+    loginUser.focus();
   }
+  loginForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const user = loginUser.value.trim().toLowerCase();
+    const person = ROSTER.find(p => p.name.toLowerCase() === user);
+    if (!person || loginPass.value !== person.name) {
+      loginError.hidden = false;
+      loginPass.value = "";
+      loginPass.focus();
+      return;
+    }
+    chooseViewer(person.name);
+  });
   function closeGate() {
     if (VIEWER) gate.hidden = true;
   }
@@ -2210,7 +3001,7 @@
       if (!hasOwn) {
         Object.keys(localStorage)
           .filter(k => k.startsWith("bp_") && !k.startsWith("bp_u-") &&
-                       ![VIEWER_KEY, "bp_theme", "bp_selected-person", "bp_selected-class"].includes(k))
+                       ![VIEWER_KEY, "bp_theme", "bp_music", "bp_selected-person", "bp_selected-class"].includes(k))
           .forEach(k => localStorage.setItem(np + k.slice(3), localStorage.getItem(k)));
       }
       localStorage.setItem(VIEWER_KEY, name);
@@ -2220,22 +3011,295 @@
   gateClose.addEventListener("click", closeGate);
   gate.addEventListener("click", e => { if (e.target === gate) closeGate(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !gate.hidden) closeGate(); });
-  viewerBtn.addEventListener("click", openGate);
+  // Con sesión iniciada la tarjeta lleva a tus mulas; para cambiar de usuario
+  // está "Salir". El login solo se abre cuando no hay sesión.
+  viewerBtn.addEventListener("click", () => { if (VIEWER) showView("roster"); else openGate(); });
+  // Cerrar sesión: lo guardado de la persona queda; solo se vuelve al login.
+  document.getElementById("logout").addEventListener("click", () => {
+    try { localStorage.removeItem(VIEWER_KEY); } catch (e) {}
+    location.reload();
+  });
 
   if (VIEWER) {
     viewerBtn.style.setProperty("--pc-color", colorForPerson(VIEWER));
     viewerBtn.querySelector(".viewer-name").textContent = VIEWER;
-    viewerBtn.title = "Cambiar de persona";
+    viewerBtn.querySelector(".dot").textContent = VIEWER[0].toUpperCase();
+    viewerBtn.title = "Ver tus mulas";
+    viewerBtn.querySelector(".viewer-swap").textContent = "›";
+    // Con sesión iniciada, en mesos solo se ven las mulas propias.
+    mesosPersonSel.closest("label").hidden = true;
   }
 
   // Lo que se marque a mano en "Mesos por mula" también suma (o saca) runs.
   mesosBody.addEventListener("change", () => renderRuns());
   document.getElementById("mesos-restore").addEventListener("click", () => renderRuns());
 
+  // --- Diario de pitches: lo que le cae a quien está viendo, semana a semana ---
+  // Cada anotación guarda la semana de bosses (WEEK_START) en la que se hizo,
+  // así el historial queda agrupable por semana. Vive en su espacio del navegador.
+  const DROPS_KEY = PREFIX + "drops";
+  let drops = [];
+  try {
+    drops = (JSON.parse(localStorage.getItem(DROPS_KEY) || "[]") || [])
+      .filter(d => d && typeof d.item === "string" && typeof d.week === "string");
+  } catch (e) { drops = []; }
+  const saveDrops = () => { try { localStorage.setItem(DROPS_KEY, JSON.stringify(drops)); } catch (e) {} };
+  const dropForm = document.getElementById("drop-form");
+  const dropBossSel = document.getElementById("drop-boss");
+  const dropCharSel = document.getElementById("drop-char");
+  const dropBody = document.getElementById("drop-body");
+  const dropSummary = document.getElementById("drop-summary");
+  let dropWeek = WEEK_START; // semana que se está mirando ("" = todas)
+
+  // Fecha del drop: por defecto hoy (hora Colombia). La semana de bosses sale
+  // de la fecha (el miércoles anterior), así se puede anotar algo atrasado y
+  // cae en su semana; lo de hoy va a la semana en curso.
+  const todayYmd = () => new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const weekOfDate = ymd => ymd === todayYmd()
+    ? WEEK_START
+    : addDays(ymd, -((new Date(ymd + "T00:00:00Z").getUTCDay() - 3 + 7) % 7));
+  // Las anotaciones de antes de que existiera el campo toman la fecha en que se hicieron.
+  drops.forEach(d => { if (!d.date) d.date = new Date((d.ts || Date.now()) - 5 * 60 * 60 * 1000).toISOString().slice(0, 10); });
+  const dropDateInput = document.getElementById("drop-date");
+  dropDateInput.value = dropDateInput.max = todayYmd();
+
+  BOSS_MESOS.forEach(b => dropBossSel.add(new Option(b.name, b.id)));
+  dropBossSel.add(new Option("Otro", "otro"));
+  if (VIEWER) getPersonClassList(VIEWER).forEach(c => dropCharSel.add(new Option(c, c)));
+
+  function renderDrops() {
+    dropSummary.innerHTML = "";
+    dropBody.innerHTML = "";
+
+    const weekLabel = document.createElement("label");
+    weekLabel.className = "runs-mules";
+    weekLabel.append("Ver ");
+    const weekSel = document.createElement("select");
+    const count = w => drops.filter(d => d.week === w).length;
+    weekSel.add(new Option(`Esta semana (mié ${shortDate(WEEK_START)}) · ${count(WEEK_START)}`, WEEK_START));
+    weekSel.add(new Option(`Todas las semanas · ${drops.length}`, ""));
+    [...new Set(drops.map(d => d.week))].filter(w => w !== WEEK_START).sort().reverse()
+      .forEach(w => weekSel.add(new Option(`Semana del mié ${shortDate(w)} · ${count(w)}`, w)));
+    if (![...weekSel.options].some(o => o.value === dropWeek)) dropWeek = WEEK_START;
+    weekSel.value = dropWeek;
+    weekSel.addEventListener("change", () => { dropWeek = weekSel.value; renderDrops(); });
+    weekLabel.appendChild(weekSel);
+
+    const shown = drops.filter(d => !dropWeek || d.week === dropWeek)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
+    const total = document.createElement("span");
+    total.innerHTML = `<strong></strong> esta semana · <strong></strong> en total`;
+    total.children[0].textContent = count(WEEK_START);
+    total.children[1].textContent = drops.length;
+    dropSummary.append(weekLabel, total);
+
+    if (!shown.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 6;
+      td.className = "runs-empty";
+      td.textContent = dropWeek === WEEK_START
+        ? "Todavía no anotaste nada esta semana."
+        : "No hay nada anotado.";
+      tr.appendChild(td);
+      dropBody.appendChild(tr);
+      return;
+    }
+    shown.forEach(d => {
+      const boss = BOSS_MESOS.find(b => b.id === d.boss);
+      const tr = document.createElement("tr");
+
+      const tdWhen = document.createElement("td");
+      tdWhen.className = "drop-when";
+      tdWhen.textContent = shortDate(d.date);
+      tdWhen.title = `Semana del mié ${shortDate(d.week)}`;
+
+      const tdBoss = document.createElement("td");
+      const name = document.createElement("span");
+      name.className = "boss-name";
+      if (boss && boss.icon) { const img = document.createElement("img"); img.src = boss.icon; img.alt = ""; name.appendChild(img); }
+      name.append(boss ? boss.name : "Otro");
+      tdBoss.appendChild(name);
+
+      const tdItem = document.createElement("td");
+      tdItem.className = "drop-item";
+      tdItem.textContent = d.item;
+      const tdCls = document.createElement("td");
+      tdCls.textContent = d.cls || "—";
+      const tdNote = document.createElement("td");
+      tdNote.className = "partners";
+      tdNote.textContent = d.note || "";
+
+      const tdDel = document.createElement("td");
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "drop-del";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", `Borrar ${d.item}`);
+      del.addEventListener("click", () => {
+        if (!confirm(`¿Borrar "${d.item}" del diario?`)) return;
+        drops = drops.filter(x => x !== d);
+        saveDrops();
+        renderDrops();
+      });
+      tdDel.appendChild(del);
+
+      tr.append(tdWhen, tdBoss, tdItem, tdCls, tdNote, tdDel);
+      dropBody.appendChild(tr);
+    });
+  }
+  dropForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const itemInput = document.getElementById("drop-item");
+    const noteInput = document.getElementById("drop-note");
+    const item = itemInput.value.trim();
+    if (!item) return;
+    const date = dropDateInput.value || todayYmd();
+    const week = weekOfDate(date);
+    drops.push({ date, week, ts: Date.now(), boss: dropBossSel.value, item, cls: dropCharSel.value, note: noteInput.value.trim() });
+    saveDrops();
+    itemInput.value = "";
+    noteInput.value = "";
+    dropWeek = week; // se muestra la semana donde quedó lo recién anotado
+    renderDrops();
+    itemInput.focus();
+  });
+  renderDrops();
+
+  // --- Roster: cartitas de las mulas de quien está viendo ---
+  // Nombre, nivel y CP los carga cada uno y se guardan en su espacio del
+  // navegador; el pie de la cartita sale de lo que esa mula hace en mesos.
+  const MULE_INFO_KEY = PREFIX + "mule-info";
+  let muleInfo = {};
+  try { muleInfo = JSON.parse(localStorage.getItem(MULE_INFO_KEY) || "{}") || {}; } catch (e) { muleInfo = {}; }
+  const muleCardsEl = document.getElementById("mule-cards");
+  const MULE_FIELDS = [
+    { key: "name",  label: "Nombre", placeholder: "Nombre del pj", maxlength: 20, wide: true },
+    { key: "level", label: "Nivel",  placeholder: "Ej: 275", type: "number", min: 1, max: 300 },
+    { key: "cp",    label: "CP",     placeholder: "Ej: 150M", maxlength: 12 },
+  ];
+
+  const MULE_COLORS = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `var(--cat-${n})`);
+  function saveMuleInfo(cls, key, value) {
+    muleInfo[cls] = { ...muleInfo[cls], [key]: value };
+    try { localStorage.setItem(MULE_INFO_KEY, JSON.stringify(muleInfo)); } catch (e) {}
+  }
+
+  function renderMuleCards() {
+    muleCardsEl.innerHTML = "";
+    if (!VIEWER) {
+      const empty = document.createElement("p");
+      empty.className = "mule-empty";
+      empty.textContent = "Elegí quién sos para ver tus mulas.";
+      muleCardsEl.appendChild(empty);
+      return;
+    }
+    getPersonClassList(VIEWER).forEach(cls => {
+      const info = muleInfo[cls] || {};
+      const mine = MY_CHARS.includes(cls);
+      const state = loadMesosState(VIEWER, cls);
+      const t = mesosTotal(state);
+      const bosses = BOSS_MESOS.filter(b => state[b.id].on).length;
+
+      const card = document.createElement("article");
+      card.className = "mule-card";
+      card.style.setProperty("--pc-color", colorForPerson(VIEWER));
+
+      const head = document.createElement("div");
+      head.className = "mule-card-head";
+      const avatar = document.createElement("span");
+      avatar.className = "mule-avatar";
+      avatar.textContent = cls[0].toUpperCase();
+      const title = document.createElement("div");
+      title.className = "mule-card-title";
+      const strong = document.createElement("strong");
+      strong.textContent = cls;
+      const small = document.createElement("small");
+      small.textContent = mine ? "La agregaste vos" : "Del roster";
+      title.append(strong, small);
+      head.append(avatar, title);
+      if (mine) {
+        const x = document.createElement("button");
+        x.type = "button";
+        x.className = "mule-remove";
+        x.textContent = "✕";
+        x.title = "Quitar esta mula";
+        x.setAttribute("aria-label", `Quitar ${cls}`);
+        x.addEventListener("click", () => {
+          if (confirm(`¿Quitar a ${cls} de tus mulas?`)) saveMyChars(MY_CHARS.filter(m => m !== cls));
+        });
+        head.appendChild(x);
+      }
+
+      const fields = document.createElement("div");
+      fields.className = "mule-fields";
+      MULE_FIELDS.forEach(f => {
+        const label = document.createElement("label");
+        if (f.wide) label.className = "wide";
+        const cap = document.createElement("span");
+        cap.className = "dash-label";
+        cap.textContent = f.label;
+        const input = document.createElement("input");
+        input.type = f.type || "text";
+        input.placeholder = f.placeholder;
+        input.autocomplete = "off";
+        if (f.maxlength) input.maxLength = f.maxlength;
+        if (f.min) { input.min = f.min; input.max = f.max; }
+        input.value = info[f.key] || "";
+        input.addEventListener("change", () => saveMuleInfo(cls, f.key, input.value.trim()));
+        label.append(cap, input);
+        fields.appendChild(label);
+      });
+
+      // Color de la cartita: uno de los 8 de la paleta (por defecto, el de la persona).
+      const colors = document.createElement("div");
+      colors.className = "mule-colors";
+      colors.setAttribute("role", "group");
+      colors.setAttribute("aria-label", `Color de ${cls}`);
+      const current = MULE_COLORS.includes(info.color) ? info.color : colorForPerson(VIEWER);
+      card.style.setProperty("--pc-color", current);
+      MULE_COLORS.forEach((color, i) => {
+        const sw = document.createElement("button");
+        sw.type = "button";
+        sw.className = "mule-swatch" + (color === current ? " active" : "");
+        sw.style.setProperty("--sw", color);
+        sw.title = `Color ${i + 1}`;
+        sw.setAttribute("aria-label", `Color ${i + 1}`);
+        sw.addEventListener("click", () => {
+          saveMuleInfo(cls, "color", color);
+          card.style.setProperty("--pc-color", color);
+          colors.querySelectorAll(".mule-swatch").forEach(b => b.classList.toggle("active", b === sw));
+        });
+        colors.appendChild(sw);
+      });
+
+      const foot = document.createElement("div");
+      foot.className = "mule-card-foot";
+      const stats = document.createElement("span");
+      stats.innerHTML = `<b></b> /sem · <b></b> boss${bosses === 1 ? "" : "es"}`;
+      stats.children[0].textContent = t.week ? fmtShort(t.week) : "0";
+      stats.children[1].textContent = bosses;
+      stats.title = `${fmtMesos(t.week)} mesos por semana` + (t.month ? ` + ${fmtMesos(t.month)} por mes` : "");
+      const go = document.createElement("button");
+      go.type = "button";
+      go.textContent = "Ver mesos";
+      go.addEventListener("click", () => {
+        mesosPersonSel.value = VIEWER;
+        fillMesosChars(cls);
+        renderMesos();
+        showView("mesos");
+      });
+      foot.append(stats, go);
+
+      card.append(head, fields, colors, foot);
+      muleCardsEl.appendChild(card);
+    });
+  }
+
   // --- Barra lateral: una vista por sección ---
   // Muestra una sección a la vez; la elegida queda en la URL (#mesos) y se
   // recuerda para la próxima visita de esa persona.
-  const VIEWS = ["horarios", "bosses", "mesos", "roster"];
+  const VIEWS = ["horarios", "bosses", "mesos", "diario", "roster"];
   const VIEW_KEY = PREFIX + "view";
   function showView(id) {
     if (!VIEWS.includes(id)) id = VIEWS[0];
@@ -2245,6 +3309,9 @@
     });
     document.querySelector(`.nav-item[data-view="${id}"]`).setAttribute("aria-current", "page");
     document.querySelectorAll(`.nav-item:not([data-view="${id}"])`).forEach(n => n.removeAttribute("aria-current"));
+    // El título de la vista va en la barra de arriba (el <h2> de la sección está oculto).
+    document.getElementById("view-title").innerHTML = document.querySelector(`#${id} > h2`).innerHTML;
+    if (id === "roster") renderMuleCards(); // el pie de cada cartita depende de los mesos
     try { localStorage.setItem(VIEW_KEY, id); } catch (e) {}
     // El hash lleva prefijo (#ver-mesos) para que no coincida con el id de la
     // sección y el navegador no salte hasta ella al cargar.
@@ -2258,7 +3325,7 @@
     badge.title = `${n} runs pendientes`;
   }
   document.querySelectorAll(".nav-item").forEach(btn => {
-    btn.addEventListener("click", () => { showView(btn.dataset.view); window.scrollTo({ top: 0 }); });
+    btn.addEventListener("click", () => showView(btn.dataset.view));
   });
   const viewFromHash = () => location.hash.replace(/^#(ver-)?/, "");
   window.addEventListener("hashchange", () => showView(viewFromHash()));
@@ -2266,6 +3333,130 @@
   try { savedView = localStorage.getItem(VIEW_KEY); } catch (e) {}
   const hashView = viewFromHash();
   showView(VIEWS.includes(hashView) ? hashView : (savedView || (VIEWER ? "horarios" : "bosses")));
+
+  // --- Reproductor de música (barra lateral) ---
+  // Pasa las pistas en loop. Pista, volumen, posición y si estaba sonando se
+  // guardan en el navegador (igual para todas las personas), así la música
+  // sigue donde iba cuando la página se recarga al cambiar de persona.
+  const TRACKS = [
+    { title: "Halloween Ghosts",       src: "music/halloween-ghosts.mp3" },
+    { title: "Scary Spooky Halloween", src: "music/scary-spooky-halloween.mp3" },
+    { title: "Happy Halloween",        src: "music/happy-halloween.mp3" },
+  ];
+  const MUSIC_KEY = "bp_music";
+  // Por defecto arranca sola al entrar, bajita (10%). "v" versiona lo guardado:
+  // lo de antes de que fuera autoplay se descarta para que tome estos valores.
+  const music = { v: 2, i: 0, vol: 0.1, muted: false, on: true, t: 0 };
+  try {
+    const saved = JSON.parse(localStorage.getItem(MUSIC_KEY) || "{}");
+    if (saved && saved.v === music.v) Object.assign(music, saved);
+  } catch (e) {}
+  music.i = Number.isInteger(music.i) && TRACKS[music.i] ? music.i : 0;
+  music.vol = Math.min(Math.max(+music.vol || 0, 0), 1);
+  music.t = +music.t || 0;
+
+  const playerEl = document.getElementById("player");
+  const playerSeek = document.getElementById("player-seek");
+  const playerVol = document.getElementById("player-vol");
+  const playerPlay = document.getElementById("player-play");
+  const playerSub = document.getElementById("player-sub");
+  const audio = new Audio();
+  audio.preload = "metadata";
+
+  let resumeAt = 0;
+  function saveMusic() {
+    music.t = audio.currentTime || resumeAt || 0;
+    try { localStorage.setItem(MUSIC_KEY, JSON.stringify(music)); } catch (e) {}
+  }
+  const fmtTime = s => isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00";
+  const setFill = (el, ratio) => el.style.setProperty("--fill", `${Math.round(ratio * 100)}%`);
+  function reflectPlayer() {
+    const dur = audio.duration || 0;
+    playerSub.textContent = `Pista ${music.i + 1} de ${TRACKS.length} · ${fmtTime(audio.currentTime)} / ${fmtTime(dur)}`;
+    if (!playerSeek.matches(":active")) playerSeek.value = dur ? (audio.currentTime / dur) * 1000 : 0;
+    setFill(playerSeek, playerSeek.value / 1000);
+    playerVol.value = music.muted ? 0 : music.vol;
+    setFill(playerVol, +playerVol.value);
+    playerEl.classList.toggle("muted", music.muted || music.vol === 0);
+    audio.volume = music.vol;
+    audio.muted = music.muted;
+  }
+  function loadTrack(i, at) {
+    music.i = (i + TRACKS.length) % TRACKS.length;
+    resumeAt = at || 0;
+    audio.src = TRACKS[music.i].src;
+    document.getElementById("player-title").textContent = TRACKS[music.i].title;
+    reflectPlayer();
+  }
+  // Los navegadores bloquean el audio hasta que haya un click en la página:
+  // si estaba sonando y no deja, arranca con el primer click.
+  function playMusic() {
+    music.on = true;
+    audio.play().catch(() => {
+      const resume = () => {
+        document.removeEventListener("pointerdown", resume);
+        document.removeEventListener("keydown", resume);
+        if (music.on) audio.play().catch(() => {});
+      };
+      document.addEventListener("pointerdown", resume);
+      document.addEventListener("keydown", resume);
+    });
+  }
+  audio.addEventListener("loadedmetadata", () => {
+    if (resumeAt && resumeAt < audio.duration) audio.currentTime = resumeAt;
+    resumeAt = 0;
+    reflectPlayer();
+  });
+  // timeupdate dispara varias veces por segundo: se repinta una vez por segundo.
+  let lastSec = -1;
+  audio.addEventListener("timeupdate", () => {
+    const sec = Math.floor(audio.currentTime);
+    if (sec === lastSec) return;
+    lastSec = sec;
+    reflectPlayer();
+  });
+  audio.addEventListener("play", () => {
+    playerEl.classList.add("playing");
+    playerPlay.setAttribute("aria-label", "Pausar música");
+  });
+  audio.addEventListener("pause", () => {
+    playerEl.classList.remove("playing");
+    playerPlay.setAttribute("aria-label", "Reproducir música");
+  });
+  audio.addEventListener("ended", () => { loadTrack(music.i + 1); playMusic(); });
+
+  playerPlay.addEventListener("click", () => {
+    if (audio.paused) playMusic();
+    else { music.on = false; audio.pause(); }
+    saveMusic();
+  });
+  function skipTrack(step) {
+    loadTrack(music.i + step);
+    if (music.on) playMusic();
+    saveMusic();
+  }
+  document.getElementById("player-prev").addEventListener("click", () => skipTrack(-1));
+  document.getElementById("player-next").addEventListener("click", () => skipTrack(1));
+  document.getElementById("player-mute").addEventListener("click", () => {
+    music.muted = !music.muted;
+    if (!music.muted && music.vol === 0) music.vol = 0.1;
+    reflectPlayer();
+    saveMusic();
+  });
+  playerVol.addEventListener("input", () => {
+    music.vol = +playerVol.value;
+    music.muted = false;
+    reflectPlayer();
+    saveMusic();
+  });
+  playerSeek.addEventListener("input", () => setFill(playerSeek, playerSeek.value / 1000));
+  playerSeek.addEventListener("change", () => {
+    if (audio.duration) audio.currentTime = (playerSeek.value / 1000) * audio.duration;
+  });
+  window.addEventListener("pagehide", saveMusic);
+
+  loadTrack(music.i, music.t);
+  if (music.on) playMusic();
 
   renderRuns();
   if (!VIEWER) openGate();
