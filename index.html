@@ -8,6 +8,17 @@
   // Aplica el tema guardado ANTES de pintar, para que no haya flash.
   // Por defecto es oscuro (no se mira el tema del sistema operativo).
   (function () {
+    // Limpieza única: al subir STORAGE_VERSION se borra todo lo guardado por
+    // el sitio en este navegador (sesión incluida), así vuelve a pedir login.
+    var STORAGE_VERSION = "2";
+    try {
+      if (localStorage.getItem("bp_storage_version") !== STORAGE_VERSION) {
+        Object.keys(localStorage)
+          .filter(function (k) { return k.indexOf("bp_") === 0; })
+          .forEach(function (k) { localStorage.removeItem(k); });
+        localStorage.setItem("bp_storage_version", STORAGE_VERSION);
+      }
+    } catch (e) {}
     var saved = localStorage.getItem("bp_theme");
     document.documentElement.dataset.theme = saved === "light" ? "light" : "dark";
     // Sin sesión iniciada solo se ve el fondo, la música y el login.
@@ -3001,7 +3012,7 @@
       if (!hasOwn) {
         Object.keys(localStorage)
           .filter(k => k.startsWith("bp_") && !k.startsWith("bp_u-") &&
-                       ![VIEWER_KEY, "bp_theme", "bp_music", "bp_selected-person", "bp_selected-class"].includes(k))
+                       ![VIEWER_KEY, "bp_theme", "bp_music", "bp_storage_version", "bp_selected-person", "bp_selected-class"].includes(k))
           .forEach(k => localStorage.setItem(np + k.slice(3), localStorage.getItem(k)));
       }
       localStorage.setItem(VIEWER_KEY, name);
