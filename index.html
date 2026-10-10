@@ -549,6 +549,79 @@
     cursor: pointer;
   }
   button#reset:hover { border-color: var(--warn); color: var(--warn); }
+
+  /* Mesos por mula */
+  .mesos-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    margin-bottom: 12px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .mesos-controls label { display: flex; align-items: center; gap: 6px; }
+  .mesos-controls select,
+  .mesos-table select {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  #mesos-restore {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  #mesos-restore:hover { border-color: var(--accent); color: var(--accent); }
+  .mesos-table td, .mesos-table th { vertical-align: middle; }
+  .mesos-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mesos-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-2); cursor: pointer; }
+  .mesos-table tr.off td:not(:first-child) { opacity: 0.4; }
+  .mesos-table .boss-name { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+  .mesos-table .boss-name img { width: 22px; height: 22px; }
+  .mesos-table .boss-name .from-party { font-size: 0.65rem; font-weight: 700; color: var(--accent-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mesos-table tr.group td {
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 12px;
+  }
+  .mesos-table .share { font-weight: 700; color: var(--text); }
+  .mesos-table tfoot td { font-weight: 700; border-top: 1px solid var(--border); border-bottom: none; }
+  .mesos-table tfoot .num { color: var(--accent-2); font-size: 1rem; }
+  #mesos-player {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    align-items: center;
+  }
+  #mesos-player .pj {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+  }
+  #mesos-player .pj.active { border-color: var(--accent); }
+  #mesos-player .pj b { font-variant-numeric: tabular-nums; }
+  #mesos-player .player-total { font-weight: 700; color: var(--text); margin-right: 4px; }
+  #mesos-player .player-total b { color: var(--accent-2); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -711,6 +784,40 @@
       </article>
 
     </div>
+  </section>
+
+  <!-- MESOS POR MULA -->
+  <section id="mesos">
+    <h2>Mesos por mula <span class="tag">Cristales semanales</span></h2>
+    <p class="desc">Elegí jugador y mula: arranca con lo que ya hace según las parties de arriba, y podés cambiar la dificultad, el tamaño de la party o sumar otros bosses. El meso del cristal se reparte en partes iguales entre los integrantes. Limbo, Malefic, Adversary y Baldrix van como máximo en trío.</p>
+    <div class="mesos-controls">
+      <label>Jugador <select id="mesos-person"></select></label>
+      <label>Mula <select id="mesos-char"></select></label>
+      <button type="button" id="mesos-restore" title="Descarta los cambios de esta mula y vuelve a lo que dicen las parties">↺ Volver a las parties</button>
+    </div>
+    <div class="table-wrap">
+      <table class="mesos-table">
+        <thead>
+          <tr>
+            <th style="width:56px">Hace</th>
+            <th>Boss</th>
+            <th>Dificultad</th>
+            <th>Party</th>
+            <th class="num">Cristal</th>
+            <th class="num">Le toca</th>
+          </tr>
+        </thead>
+        <tbody id="mesos-body"></tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td colspan="4">Total semanal de esta mula</td>
+            <td class="num" id="mesos-total"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div id="mesos-player"></div>
   </section>
 
   <!-- HORARIOS / VISTA SEMANAL -->
@@ -1338,6 +1445,201 @@
   }
   updateWeekChip();
   setInterval(updateWeekChip, 60000);
+
+  // --- Mesos por mula ---
+  // Precio del cristal de cada boss por dificultad (mesos). El meso se reparte
+  // en partes iguales entre los integrantes de la party; "max" es el tamaño
+  // máximo de party (Limbo, Malefic, Adversary y Baldrix van como mucho en trío).
+  const BOSS_MESOS = [
+    { id: "kalos",     name: "Kalos el Guardián", icon: "icon-kalos.png",     max: 6, def: "Chaos",   prices: { Easy: 937500000, Normal: 1300000000, Chaos: 2600000000, Extreme: 5200000000 } },
+    { id: "limbo",     name: "Limbo",             icon: "icon-limbo.png",     max: 3, def: "Hard",    prices: { Normal: 2100000000, Hard: 3745000000 } },
+    { id: "kaling",    name: "Kaling",            icon: "icon-kaling.png",    max: 6, def: "Hard",    prices: { Easy: 1031250000, Normal: 1506500000, Hard: 2990000000, Extreme: 6026000000 } },
+    { id: "seren",     name: "Seren",             icon: "icon-seren.png",     max: 6, def: "Extreme", prices: { Normal: 889021875, Hard: 1096562500, Extreme: 4235000000 } },
+    { id: "malefic",   name: "Malefic",           icon: "icon-malefic.png",   max: 3, def: "Hard",    prices: { Normal: 1452000000, Hard: 3990000000 } },
+    { id: "adversary", name: "Adversary",         icon: "icon-adversary.png", max: 3, def: "Hard",    prices: { Easy: 985000000, Normal: 1365000000, Hard: 2940000000, Extreme: 5880000000 } },
+    { id: "baldrix",   name: "Baldrix",           icon: "icon-baldrix.png",   max: 3, def: "Normal",  prices: { Normal: 2800000000, Hard: 4200000000 } },
+    // Bosses que no están en las cards: arrancan apagados, se pueden sumar a mano.
+    { id: "blackmage", name: "Black Mage",           max: 6, extra: true, def: "Hard",    prices: { Hard: 4500000000, Extreme: 18000000000 } },
+    { id: "jupiter",   name: "Jupiter",              max: 6, extra: true, def: "Normal",  prices: { Normal: 2965000000, Hard: 5953000000 } },
+    { id: "lotus",     name: "Lotus",                max: 6, extra: true, def: "Hard",    prices: { Hard: 444675000, Extreme: 1397500000 } },
+    { id: "verus",     name: "Verus Hilla",          max: 6, extra: true, def: "Hard",    prices: { Normal: 581880000, Hard: 762105000 } },
+    { id: "darknell",  name: "Darknell",             max: 6, extra: true, def: "Hard",    prices: { Hard: 667920000 } },
+    { id: "will",      name: "Will",                 max: 6, extra: true, def: "Hard",    prices: { Hard: 621810000 } },
+    { id: "slime",     name: "Guardian Angel Slime", max: 6, extra: true, def: "Chaos",   prices: { Chaos: 600578125 } },
+    { id: "gloom",     name: "Gloom",                max: 6, extra: true, def: "Chaos",   prices: { Chaos: 563945000 } },
+    { id: "lucid",     name: "Lucid",                max: 6, extra: true, def: "Hard",    prices: { Hard: 504000000 } },
+  ];
+  const SIZE_NAMES = { 1: "Solo", 2: "Dúo", 3: "Trío", 4: "Cuarteto", 5: "Party de 5", 6: "Party de 6" };
+  const BADGE_TO_DIFF = { Xtreme: "Extreme", Extreme: "Extreme", Chaos: "Chaos", Hard: "Hard", Normal: "Normal", Easy: "Easy" };
+  const fmtMesos = n => Math.round(n).toLocaleString("es-CO");
+
+  // Lo que ya hace esa mula según las parties de las cards: dificultad
+  // (badge de la línea o de la card) y cuántos son en la party.
+  function mesosFromParties(person, cls) {
+    const out = {};
+    const needle = `${person} (${cls}`.toLowerCase();
+    document.querySelectorAll(".boss-card").forEach(card => {
+      const icon = card.querySelector(".boss-icon")?.getAttribute("src");
+      const boss = BOSS_MESOS.find(b => b.icon === icon);
+      if (!boss) return;
+      const cardBadge = card.querySelector(".diff-badge")?.alt;
+      card.querySelectorAll(".party-field").forEach(line => {
+        const full = line.dataset.full || "";
+        if (!full.replace(/<[^>]+>/g, " ").toLowerCase().includes(needle)) return;
+        const lineBadge = (full.match(/class="diff-badge-inline"[^>]*alt="(\w+)"/) || [])[1];
+        const diff = BADGE_TO_DIFF[lineBadge || cardBadge];
+        out[boss.id] = {
+          on: true,
+          diff: boss.prices[diff] ? diff : boss.def,
+          size: Math.min(Math.max(countPartyMembers(full), 1), boss.max),
+          fromParty: true,
+        };
+      });
+    });
+    return out;
+  }
+
+  // Estado de una mula: lo de las parties + los cambios guardados en este navegador.
+  const mesosKey = (person, cls) => PREFIX + `mesos-${person}|${cls}`;
+  function loadMesosState(person, cls) {
+    const base = mesosFromParties(person, cls);
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(mesosKey(person, cls)) || "{}"); } catch (e) { saved = {}; }
+    const state = {};
+    BOSS_MESOS.forEach(b => {
+      const d = base[b.id] || { on: false, diff: b.def, size: 1, fromParty: false };
+      const s = saved[b.id] || {};
+      state[b.id] = {
+        on: s.on ?? d.on,
+        diff: b.prices[s.diff] ? s.diff : d.diff,
+        size: Math.min(Math.max(+s.size || d.size, 1), b.max),
+        fromParty: d.fromParty,
+      };
+    });
+    return state;
+  }
+  function saveMesosState(person, cls, state) {
+    const slim = {};
+    Object.entries(state).forEach(([id, s]) => { slim[id] = { on: s.on, diff: s.diff, size: s.size }; });
+    try { localStorage.setItem(mesosKey(person, cls), JSON.stringify(slim)); } catch (e) {}
+  }
+  function mesosTotal(state) {
+    return BOSS_MESOS.reduce((sum, b) => {
+      const s = state[b.id];
+      return s.on ? sum + b.prices[s.diff] / s.size : sum;
+    }, 0);
+  }
+
+  const mesosPersonSel = document.getElementById("mesos-person");
+  const mesosCharSel = document.getElementById("mesos-char");
+  const mesosBody = document.getElementById("mesos-body");
+  const mesosTotalEl = document.getElementById("mesos-total");
+  const mesosPlayerEl = document.getElementById("mesos-player");
+
+  ROSTER.forEach(p => mesosPersonSel.add(new Option(p.name, p.name)));
+
+  function fillMesosChars(preferred) {
+    const classes = getPersonClassList(mesosPersonSel.value);
+    mesosCharSel.innerHTML = "";
+    classes.forEach(c => mesosCharSel.add(new Option(c, c)));
+    if (preferred && classes.includes(preferred)) mesosCharSel.value = preferred;
+  }
+
+  function renderMesos() {
+    const person = mesosPersonSel.value;
+    const cls = mesosCharSel.value;
+    if (!person || !cls) return;
+    const state = loadMesosState(person, cls);
+    mesosBody.innerHTML = "";
+
+    let extraHeader = false;
+    BOSS_MESOS.forEach(b => {
+      if (b.extra && !extraHeader) {
+        extraHeader = true;
+        const g = document.createElement("tr");
+        g.className = "group";
+        g.innerHTML = `<td colspan="6">Otros bosses</td>`;
+        mesosBody.appendChild(g);
+      }
+      const s = state[b.id];
+      const tr = document.createElement("tr");
+      tr.classList.toggle("off", !s.on);
+
+      const tdOn = document.createElement("td");
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = s.on;
+      chk.setAttribute("aria-label", `¿${cls} hace ${b.name}?`);
+      chk.addEventListener("change", () => { s.on = chk.checked; saveMesosState(person, cls, state); renderMesos(); });
+      tdOn.appendChild(chk);
+
+      const tdName = document.createElement("td");
+      const nameWrap = document.createElement("span");
+      nameWrap.className = "boss-name";
+      if (b.icon) { const img = document.createElement("img"); img.src = b.icon; img.alt = ""; nameWrap.appendChild(img); }
+      nameWrap.append(b.name);
+      if (s.fromParty) { const tag = document.createElement("span"); tag.className = "from-party"; tag.textContent = "en party"; nameWrap.appendChild(tag); }
+      tdName.appendChild(nameWrap);
+
+      const tdDiff = document.createElement("td");
+      const diffSel = document.createElement("select");
+      Object.keys(b.prices).forEach(d => diffSel.add(new Option(d, d)));
+      diffSel.value = s.diff;
+      diffSel.addEventListener("change", () => { s.diff = diffSel.value; s.on = true; saveMesosState(person, cls, state); renderMesos(); });
+      tdDiff.appendChild(diffSel);
+
+      const tdSize = document.createElement("td");
+      const sizeSel = document.createElement("select");
+      for (let n = 1; n <= b.max; n++) sizeSel.add(new Option(SIZE_NAMES[n], n));
+      sizeSel.value = s.size;
+      sizeSel.addEventListener("change", () => { s.size = +sizeSel.value; s.on = true; saveMesosState(person, cls, state); renderMesos(); });
+      tdSize.appendChild(sizeSel);
+
+      const price = b.prices[s.diff];
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "num";
+      tdPrice.textContent = fmtMesos(price);
+      const tdShare = document.createElement("td");
+      tdShare.className = "num share";
+      tdShare.textContent = s.on ? fmtMesos(price / s.size) : "—";
+
+      tr.append(tdOn, tdName, tdDiff, tdSize, tdPrice, tdShare);
+      mesosBody.appendChild(tr);
+    });
+
+    mesosTotalEl.textContent = fmtMesos(mesosTotal(state));
+
+    // Total del jugador sumando todas sus mulas (cada una con su propio estado).
+    mesosPlayerEl.innerHTML = "";
+    const classes = getPersonClassList(person);
+    const perChar = classes.map(c => [c, mesosTotal(loadMesosState(person, c))]);
+    const total = document.createElement("span");
+    total.className = "player-total";
+    total.innerHTML = `${person} en total: <b>${fmtMesos(perChar.reduce((a, [, v]) => a + v, 0))}</b>`;
+    mesosPlayerEl.appendChild(total);
+    perChar.forEach(([c, v]) => {
+      const pj = document.createElement("button");
+      pj.type = "button";
+      pj.className = "pj" + (c === cls ? " active" : "");
+      pj.innerHTML = `${c}: <b></b>`;
+      pj.querySelector("b").textContent = fmtMesos(v);
+      pj.addEventListener("click", () => { mesosCharSel.value = c; renderMesos(); });
+      mesosPlayerEl.appendChild(pj);
+    });
+  }
+
+  mesosPersonSel.addEventListener("change", () => { fillMesosChars(); renderMesos(); });
+  mesosCharSel.addEventListener("change", renderMesos);
+  document.getElementById("mesos-restore").addEventListener("click", () => {
+    try { localStorage.removeItem(mesosKey(mesosPersonSel.value, mesosCharSel.value)); } catch (e) {}
+    renderMesos();
+  });
+
+  // Arranca con la persona/pj elegidos en "¿Quién sos?", si hay.
+  const startPerson = personChipWrap.dataset.selected;
+  if (startPerson && ROSTER.some(p => p.name === startPerson)) mesosPersonSel.value = startPerson;
+  fillMesosChars(charChipWrap.dataset.selected);
+  renderMesos();
 </script>
 
 </body>
