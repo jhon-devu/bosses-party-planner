@@ -735,6 +735,147 @@
   .day-chip.done { background: transparent; border-color: var(--accent-2); color: var(--accent-2); }
   tr.flash td { animation: flash 1.2s ease-out; }
   @keyframes flash { from { background: color-mix(in srgb, var(--accent) 25%, transparent); } to { background: transparent; } }
+
+  /* Barra lateral + vistas */
+  .app {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+  .app > main { max-width: none; margin: 0; min-width: 0; }
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 24px 12px;
+    border-right: 1px solid var(--border);
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: var(--panel-2); color: var(--text); }
+  .nav-item.active {
+    background: var(--panel-2);
+    border-color: var(--border);
+    color: var(--text);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .nav-ico { width: 20px; text-align: center; }
+  .nav-label { flex: 1; }
+  .nav-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-badge[hidden] { display: none; }
+  .sidebar-foot { margin: auto 0 0; padding: 12px; font-size: 0.72rem; color: var(--muted); }
+  section.view { display: none; }
+  section.view.active { display: block; }
+
+  @media (max-width: 820px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .sidebar {
+      z-index: 20;
+      height: auto;
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 8px 16px;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .nav-item { width: auto; white-space: nowrap; padding: 8px 12px; }
+    .nav-item.active { box-shadow: inset 0 -3px 0 var(--accent); }
+    .sidebar-foot { display: none; }
+    .top-controls { flex: 1 1 100%; min-width: 0; justify-content: flex-start; }
+    .reset-timer { white-space: normal; flex-wrap: wrap; }
+  }
+
+  /* Roster: personajes propios */
+  .add-char {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .add-char[hidden] { display: none; }
+  .add-char strong { color: var(--text); }
+  .add-char input {
+    flex: 1 1 180px;
+    max-width: 260px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font: inherit;
+  }
+  .add-char button {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  tr.me td.rowhead { color: var(--accent); }
+  .added-char {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    padding: 1px 4px 1px 9px;
+    border-radius: 999px;
+    border: 1px dashed var(--accent);
+    color: var(--text);
+    font-size: 0.82rem;
+  }
+  .added-char button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 2px 4px;
+  }
+  .added-char button:hover { color: var(--danger); }
+  .monthly-tag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pending);
+    border: 1px solid var(--pending);
+    border-radius: 999px;
+    padding: 0 6px;
+  }
 </style>
 </head>
 <body>
@@ -743,7 +884,7 @@
   <div class="top-inner">
     <div>
       <h1>🗡️ Gestión de Parties · Bosses</h1>
-      <p>Editá cualquier campo con click (roster, parties, notas, horarios) — se guarda solo en este navegador.</p>
+      <p>Parties, runs y mesos de la semana — cada uno ve y guarda lo suyo.</p>
     </div>
     <div class="top-controls">
       <button type="button" class="viewer-btn" id="viewer-btn"><span class="dot"></span><span class="viewer-name">¿Quién sos?</span></button>
@@ -756,12 +897,26 @@
   </div>
 </header>
 
+<div class="app">
+  <nav class="sidebar" aria-label="Secciones">
+    <button type="button" class="nav-item" data-view="horarios"><span class="nav-ico">🗓️</span><span class="nav-label">Mis runs</span><span class="nav-badge" id="nav-runs-badge" hidden></span></button>
+    <button type="button" class="nav-item" data-view="bosses"><span class="nav-ico">⚔️</span><span class="nav-label">Bosses</span></button>
+    <button type="button" class="nav-item" data-view="mesos"><span class="nav-ico">💰</span><span class="nav-label">Mesos por mula</span></button>
+    <button type="button" class="nav-item" data-view="roster"><span class="nav-ico">👥</span><span class="nav-label">Roster</span></button>
+    <p class="sidebar-foot">Todo se guarda en este navegador, separado por persona.</p>
+  </nav>
+
 <main>
 
   <!-- ROSTER -->
-  <section id="roster">
-    <h2>Roster <span class="tag">Fijo</span></h2>
-    <p class="desc">Personas fijas y sus personajes. Es una lista fija (no se edita desde acá) y de esta misma lista sale todo el resto de la página: los chips de "¿Quién sos?" y con quién se arman las parties.</p>
+  <section id="roster" class="view">
+    <h2>Roster <span class="tag">Personas y personajes</span></h2>
+    <p class="desc">De esta lista sale todo el resto de la página: los chips de "¿Quién sos?", los mesos y tus runs. La base es fija; vos podés sumar tus propios personajes (se guardan solo en tu navegador). Tachados: sin parties por ahora.</p>
+    <form class="add-char" id="add-char" hidden>
+      <label for="add-char-name">Agregar personaje a <strong id="add-char-who"></strong></label>
+      <input type="text" id="add-char-name" placeholder="Ej: Hero, Mercedes…" maxlength="40" autocomplete="off" required>
+      <button type="submit">＋ Agregar</button>
+    </form>
     <div class="table-wrap">
       <table>
         <thead><tr><th style="width:22%">Jugador</th><th>Clase(s)</th></tr></thead>
@@ -771,7 +926,7 @@
   </section>
 
   <!-- BOSSES / PARTIES -->
-  <section id="bosses">
+  <section id="bosses" class="view">
     <h2>Bosses <span class="tag">Parties actuales</span></h2>
     <p class="desc">Composición y notas por boss. Click en el estado para cambiarlo.</p>
 
@@ -901,7 +1056,7 @@
   </section>
 
   <!-- MESOS POR MULA -->
-  <section id="mesos">
+  <section id="mesos" class="view">
     <h2>Mesos por mula <span class="tag">Cristales semanales</span></h2>
     <p class="desc">Elegí jugador y mula: arranca con lo que ya hace según las parties de arriba, y podés cambiar la dificultad, el tamaño de la party o sumar otros bosses. El meso del cristal se reparte en partes iguales entre los integrantes. Limbo, Malefic, Adversary y Baldrix van como máximo en trío.</p>
     <div class="mesos-controls">
@@ -928,6 +1083,11 @@
             <td colspan="4">Total semanal de esta mula</td>
             <td class="num" id="mesos-total"></td>
           </tr>
+          <tr id="mesos-month-row" hidden>
+            <td></td>
+            <td colspan="4">Mensual (Black Mage, reset el 1° de cada mes)</td>
+            <td class="num" id="mesos-total-month"></td>
+          </tr>
         </tfoot>
       </table>
     </div>
@@ -935,7 +1095,7 @@
   </section>
 
   <!-- MIS RUNS: HORARIOS + CHECKLIST -->
-  <section id="horarios">
+  <section id="horarios" class="view">
     <h2>Mis runs <span class="tag">Horarios y checklist</span></h2>
     <p class="desc">Todas tus runs de la semana, una por mula y boss según las parties. Marcá el día y la hora para agendarla y tildala cuando la hagas; los tildes se limpian solos con el reset del miércoles.</p>
     <div class="runs-progress" id="runs-progress"></div>
@@ -957,6 +1117,7 @@
   </section>
 
 </main>
+</div>
 
 <div class="viewer-gate" id="viewer-gate" hidden>
   <div class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
@@ -988,22 +1149,6 @@
     { name: "Crunchyroll", classes: "Night Walker" },
   ];
 
-  // --- Build roster table (fijo, no editable) ---
-  const rosterBody = document.getElementById("roster-body");
-  ROSTER.forEach(p => {
-    const tr = document.createElement("tr");
-    const tdName = document.createElement("td");
-    tdName.className = "rowhead";
-    tdName.textContent = p.name;
-    const tdClass = document.createElement("td");
-    tdClass.textContent = p.classes;
-    tr.appendChild(tdName);
-    tr.appendChild(tdClass);
-    tr.dataset.person = p.name;
-    rosterBody.appendChild(tr);
-  });
-
-  // --- Persistence: generic contenteditable ---
   // Cada persona que mira la página tiene su propio espacio guardado; la
   // elige en "¿Quién está viendo la página?" (ver más abajo).
   const VIEWER_KEY = "bp_viewer";
@@ -1011,6 +1156,82 @@
   try { VIEWER = localStorage.getItem(VIEWER_KEY); } catch (e) {}
   if (VIEWER && !ROSTER.some(p => p.name === VIEWER)) VIEWER = null;
   const PREFIX = VIEWER ? `bp_u-${VIEWER}_` : "bp_";
+
+  // Personajes que agregó quien está viendo (solo existen en su navegador):
+  // se suman a su fila del roster, así aparecen en filtros, mesos y runs.
+  const MY_CHARS_KEY = PREFIX + "my-chars";
+  let MY_CHARS = [];
+  try {
+    MY_CHARS = JSON.parse(localStorage.getItem(MY_CHARS_KEY) || "[]")
+      .filter(c => typeof c === "string" && c.trim() && !c.includes(","));
+  } catch (e) { MY_CHARS = []; }
+  const BASE_CLASSES = {};
+  ROSTER.forEach(p => { BASE_CLASSES[p.name] = p.classes.split(",").map(c => c.trim()); });
+  if (VIEWER) {
+    const me = ROSTER.find(p => p.name === VIEWER);
+    MY_CHARS = MY_CHARS.filter(c => !BASE_CLASSES[VIEWER].some(b => b.toLowerCase() === c.toLowerCase()));
+    if (MY_CHARS.length) me.classes += ", " + MY_CHARS.join(", ");
+  }
+  function saveMyChars(list) {
+    try { localStorage.setItem(MY_CHARS_KEY, JSON.stringify(list)); } catch (e) {}
+    location.reload();
+  }
+
+  // --- Roster: base fija + los personajes agregados de quien está viendo ---
+  const rosterBody = document.getElementById("roster-body");
+  ROSTER.forEach(p => {
+    const tr = document.createElement("tr");
+    const tdName = document.createElement("td");
+    tdName.className = "rowhead";
+    tdName.textContent = p.name;
+    const tdClass = document.createElement("td");
+    tdClass.textContent = BASE_CLASSES[p.name].join(", ");
+    if (p.name === VIEWER) {
+      MY_CHARS.forEach(c => {
+        const pill = document.createElement("span");
+        pill.className = "added-char";
+        pill.title = "Lo agregaste vos (solo se ve en este navegador)";
+        pill.append(c);
+        const x = document.createElement("button");
+        x.type = "button";
+        x.textContent = "✕";
+        x.setAttribute("aria-label", `Quitar ${c}`);
+        x.addEventListener("click", () => {
+          if (confirm(`¿Quitar a ${c} de tus personajes?`)) saveMyChars(MY_CHARS.filter(m => m !== c));
+        });
+        pill.appendChild(x);
+        tdClass.appendChild(pill);
+      });
+    }
+    tr.appendChild(tdName);
+    tr.appendChild(tdClass);
+    tr.dataset.person = p.name;
+    tr.classList.toggle("me", p.name === VIEWER);
+    rosterBody.appendChild(tr);
+  });
+
+  // Formulario para sumar un personaje propio.
+  const addCharForm = document.getElementById("add-char");
+  if (VIEWER) {
+    addCharForm.hidden = false;
+    document.getElementById("add-char-who").textContent = VIEWER;
+    addCharForm.addEventListener("submit", e => {
+      e.preventDefault();
+      const input = document.getElementById("add-char-name");
+      const name = input.value.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+      if (!name) return;
+      const all = getPersonClassList(VIEWER);
+      if (all.some(c => c.toLowerCase() === name.toLowerCase())) {
+        input.setCustomValidity("Ya tenés ese personaje");
+        input.reportValidity();
+        return;
+      }
+      saveMyChars([...MY_CHARS, name]);
+    });
+    document.getElementById("add-char-name").addEventListener("input", e => e.target.setCustomValidity(""));
+  }
+
+  // --- Persistence: generic contenteditable ---
   function loadAndBind() {
     document.querySelectorAll("[data-key]").forEach(el => {
       const key = PREFIX + el.dataset.key;
@@ -1507,7 +1728,8 @@
     { id: "adversary", name: "Adversary",         icon: "icon-adversary.png", max: 3, def: "Hard",    prices: { Easy: 985000000, Normal: 1365000000, Hard: 2940000000, Extreme: 5880000000 } },
     { id: "baldrix",   name: "Baldrix",           icon: "icon-baldrix.png",   max: 3, def: "Normal",  prices: { Normal: 2800000000, Hard: 4200000000 } },
     // Bosses que no están en las cards: arrancan apagados, se pueden sumar a mano.
-    { id: "blackmage", name: "Black Mage",           max: 6, extra: true, def: "Hard",    prices: { Hard: 4500000000, Extreme: 18000000000 } },
+    // Black Mage es mensual (reset el 1° de cada mes): va aparte del total semanal.
+    { id: "blackmage", name: "Black Mage",           max: 6, extra: true, monthly: true, def: "Hard", prices: { Hard: 4500000000, Extreme: 18000000000 } },
     { id: "jupiter",   name: "Jupiter",              max: 6, extra: true, def: "Normal",  prices: { Normal: 2965000000, Hard: 5953000000 } },
     { id: "lotus",     name: "Lotus",                max: 6, extra: true, def: "Hard",    prices: { Hard: 444675000, Extreme: 1397500000 } },
     { id: "verus",     name: "Verus Hilla",          max: 6, extra: true, def: "Hard",    prices: { Normal: 581880000, Hard: 762105000 } },
@@ -1571,17 +1793,21 @@
     Object.entries(state).forEach(([id, s]) => { slim[id] = { on: s.on, diff: s.diff, size: s.size }; });
     try { localStorage.setItem(mesosKey(person, cls), JSON.stringify(slim)); } catch (e) {}
   }
+  // Totales separados: lo semanal y lo mensual (Black Mage) no se suman entre sí.
   function mesosTotal(state) {
-    return BOSS_MESOS.reduce((sum, b) => {
+    return BOSS_MESOS.reduce((t, b) => {
       const s = state[b.id];
-      return s.on ? sum + b.prices[s.diff] / s.size : sum;
-    }, 0);
+      if (s.on) t[b.monthly ? "month" : "week"] += b.prices[s.diff] / s.size;
+      return t;
+    }, { week: 0, month: 0 });
   }
 
   const mesosPersonSel = document.getElementById("mesos-person");
   const mesosCharSel = document.getElementById("mesos-char");
   const mesosBody = document.getElementById("mesos-body");
   const mesosTotalEl = document.getElementById("mesos-total");
+  const mesosMonthRow = document.getElementById("mesos-month-row");
+  const mesosMonthEl = document.getElementById("mesos-total-month");
   const mesosPlayerEl = document.getElementById("mesos-player");
 
   ROSTER.forEach(p => mesosPersonSel.add(new Option(p.name, p.name)));
@@ -1626,6 +1852,7 @@
       nameWrap.className = "boss-name";
       if (b.icon) { const img = document.createElement("img"); img.src = b.icon; img.alt = ""; nameWrap.appendChild(img); }
       nameWrap.append(b.name);
+      if (b.monthly) { const tag = document.createElement("span"); tag.className = "monthly-tag"; tag.textContent = "mensual"; nameWrap.appendChild(tag); }
       if (s.fromParty) { const tag = document.createElement("span"); tag.className = "from-party"; tag.textContent = "en party"; nameWrap.appendChild(tag); }
       tdName.appendChild(nameWrap);
 
@@ -1649,28 +1876,34 @@
       tdPrice.textContent = fmtMesos(price);
       const tdShare = document.createElement("td");
       tdShare.className = "num share";
-      tdShare.textContent = s.on ? fmtMesos(price / s.size) : "—";
+      tdShare.textContent = s.on ? fmtMesos(price / s.size) + (b.monthly ? " /mes" : "") : "—";
 
       tr.append(tdOn, tdName, tdDiff, tdSize, tdPrice, tdShare);
       mesosBody.appendChild(tr);
     });
 
-    mesosTotalEl.textContent = fmtMesos(mesosTotal(state));
+    const t = mesosTotal(state);
+    mesosTotalEl.textContent = fmtMesos(t.week);
+    mesosMonthRow.hidden = !t.month;
+    mesosMonthEl.textContent = fmtMesos(t.month);
 
     // Total del jugador sumando todas sus mulas (cada una con su propio estado).
     mesosPlayerEl.innerHTML = "";
     const classes = getPersonClassList(person);
     const perChar = classes.map(c => [c, mesosTotal(loadMesosState(person, c))]);
+    const sumWeek = perChar.reduce((a, [, v]) => a + v.week, 0);
+    const sumMonth = perChar.reduce((a, [, v]) => a + v.month, 0);
     const total = document.createElement("span");
     total.className = "player-total";
-    total.innerHTML = `${person} en total: <b>${fmtMesos(perChar.reduce((a, [, v]) => a + v, 0))}</b>`;
+    total.innerHTML = `${person} en total: <b>${fmtMesos(sumWeek)}</b> /semana` +
+      (sumMonth ? ` · <b>${fmtMesos(sumMonth)}</b> /mes` : "");
     mesosPlayerEl.appendChild(total);
     perChar.forEach(([c, v]) => {
       const pj = document.createElement("button");
       pj.type = "button";
       pj.className = "pj" + (c === cls ? " active" : "");
       pj.innerHTML = `${c}: <b></b>`;
-      pj.querySelector("b").textContent = fmtMesos(v);
+      pj.querySelector("b").textContent = fmtMesos(v.week) + (v.month ? ` + ${fmtMesos(v.month)}/mes` : "");
       pj.addEventListener("click", () => { mesosCharSel.value = c; renderMesos(); });
       mesosPlayerEl.appendChild(pj);
     });
@@ -1728,11 +1961,38 @@
         });
       });
     });
+
+    // Además, los bosses que marcaste a mano en "Mesos por mula" y no salen de
+    // una party (ej. un personaje recién agregado, o Black Mage).
+    getPersonClassList(person).forEach(cls => {
+      const state = loadMesosState(person, cls);
+      BOSS_MESOS.forEach(b => {
+        const s = state[b.id];
+        const id = `${b.id}|${cls}`;
+        if (!s.on || s.fromParty || runs.some(r => r.id === id)) return;
+        const card = b.icon ? document.querySelector(`.boss-card .boss-icon[src="${b.icon}"]`)?.closest(".boss-card") : null;
+        runs.push({
+          id,
+          boss: b,
+          cls,
+          diff: s.diff,
+          partners: [],
+          withText: s.size > 1 ? `${SIZE_NAMES[s.size]} (fuera de las parties)` : "Solo",
+          dayRowId: card?.querySelector(".day-row")?.id || null,
+        });
+      });
+    });
     return runs;
   }
 
+  // Black Mage (y cualquier boss "monthly") se tilda por mes: el reset es el
+  // 1° de cada mes a las 00:00 UTC (7:00 pm del día anterior en Colombia).
+  const MONTH_KEY = new Date().toISOString().slice(0, 7);
+  const MONTHLY_IDS = BOSS_MESOS.filter(b => b.monthly).map(b => b.id);
+  const runPeriod = id => MONTHLY_IDS.includes(id.split("|")[0]) ? `m-${MONTH_KEY}` : WEEK_START;
+
   const runSchedKey = id => PREFIX + `run-sched-${id}`;
-  const runDoneKey = id => PREFIX + `run-done-${WEEK_START}-${id}`;
+  const runDoneKey = id => PREFIX + `run-done-${runPeriod(id)}-${id}`;
   function getRunSched(id) {
     try { return JSON.parse(localStorage.getItem(runSchedKey(id))) || {}; } catch (e) { return {}; }
   }
@@ -1751,10 +2011,12 @@
       else localStorage.removeItem(runDoneKey(id));
     } catch (e) {}
   }
-  // Los tildes de semanas anteriores ya no sirven.
+  // Los tildes de semanas (o meses) anteriores ya no sirven.
   try {
     Object.keys(localStorage)
-      .filter(k => k.startsWith(PREFIX + "run-done-") && !k.startsWith(PREFIX + `run-done-${WEEK_START}-`))
+      .filter(k => k.startsWith(PREFIX + "run-done-") &&
+                   !k.startsWith(PREFIX + `run-done-${WEEK_START}-`) &&
+                   !k.startsWith(PREFIX + `run-done-m-${MONTH_KEY}-`))
       .forEach(k => localStorage.removeItem(k));
   } catch (e) {}
 
@@ -1779,11 +2041,12 @@
         b.addEventListener("click", openGate);
         td.appendChild(b);
       } else {
-        td.textContent = `${VIEWER} no está en ninguna party por ahora.`;
+        td.textContent = `${VIEWER} no está en ninguna party por ahora. Podés sumar bosses a mano en Mesos por mula.`;
       }
       tr.appendChild(td);
       runsBody.appendChild(tr);
       renderCardDays([]);
+      setNavBadge(0);
       return;
     }
 
@@ -1808,12 +2071,22 @@
       const tdBoss = document.createElement("td");
       const name = document.createElement("span");
       name.className = "boss-name";
-      const img = document.createElement("img");
-      img.src = r.boss.icon;
-      img.alt = "";
+      if (r.boss.icon) {
+        const img = document.createElement("img");
+        img.src = r.boss.icon;
+        img.alt = "";
+        name.appendChild(img);
+      }
       const small = document.createElement("small");
       small.textContent = r.diff;
-      name.append(img, r.boss.name, small);
+      name.append(r.boss.name, small);
+      if (r.boss.monthly) {
+        const tag = document.createElement("span");
+        tag.className = "monthly-tag";
+        tag.textContent = "mensual";
+        tag.title = "Se resetea el 1° de cada mes";
+        name.appendChild(tag);
+      }
       tdBoss.appendChild(name);
 
       const tdCls = document.createElement("td");
@@ -1821,7 +2094,7 @@
 
       const tdWith = document.createElement("td");
       tdWith.className = "partners";
-      tdWith.textContent = r.partners.length ? r.partners.join(", ") : "Solo";
+      tdWith.textContent = r.withText || (r.partners.length ? r.partners.join(", ") : "Solo");
 
       const tdDays = document.createElement("td");
       const daysWrap = document.createElement("div");
@@ -1865,6 +2138,7 @@
     bar.className = "runs-bar";
     bar.innerHTML = `<span style="width:${pct}%"></span>`;
     runsProgress.append(label, bar);
+    setNavBadge(runs.length - done);
 
     renderCardDays(runs);
   }
@@ -1889,6 +2163,7 @@
         b.addEventListener("click", () => {
           const target = mine.find(r => getRunSched(r.id).day === d) || mine[0];
           if (!target) return;
+          showView("horarios");
           const row = runsBody.querySelector(`tr[data-run="${CSS.escape(target.id)}"]`);
           if (!row) return;
           row.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1952,6 +2227,45 @@
     viewerBtn.querySelector(".viewer-name").textContent = VIEWER;
     viewerBtn.title = "Cambiar de persona";
   }
+
+  // Lo que se marque a mano en "Mesos por mula" también suma (o saca) runs.
+  mesosBody.addEventListener("change", () => renderRuns());
+  document.getElementById("mesos-restore").addEventListener("click", () => renderRuns());
+
+  // --- Barra lateral: una vista por sección ---
+  // Muestra una sección a la vez; la elegida queda en la URL (#mesos) y se
+  // recuerda para la próxima visita de esa persona.
+  const VIEWS = ["horarios", "bosses", "mesos", "roster"];
+  const VIEW_KEY = PREFIX + "view";
+  function showView(id) {
+    if (!VIEWS.includes(id)) id = VIEWS[0];
+    VIEWS.forEach(v => {
+      document.getElementById(v).classList.toggle("active", v === id);
+      document.querySelector(`.nav-item[data-view="${v}"]`).classList.toggle("active", v === id);
+    });
+    document.querySelector(`.nav-item[data-view="${id}"]`).setAttribute("aria-current", "page");
+    document.querySelectorAll(`.nav-item:not([data-view="${id}"])`).forEach(n => n.removeAttribute("aria-current"));
+    try { localStorage.setItem(VIEW_KEY, id); } catch (e) {}
+    // El hash lleva prefijo (#ver-mesos) para que no coincida con el id de la
+    // sección y el navegador no salte hasta ella al cargar.
+    if (location.hash !== "#ver-" + id) history.replaceState(null, "", "#ver-" + id);
+  }
+  function setNavBadge(n) {
+    const badge = document.getElementById("nav-runs-badge");
+    if (!badge) return;
+    badge.textContent = n;
+    badge.hidden = !n;
+    badge.title = `${n} runs pendientes`;
+  }
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.addEventListener("click", () => { showView(btn.dataset.view); window.scrollTo({ top: 0 }); });
+  });
+  const viewFromHash = () => location.hash.replace(/^#(ver-)?/, "");
+  window.addEventListener("hashchange", () => showView(viewFromHash()));
+  let savedView = null;
+  try { savedView = localStorage.getItem(VIEW_KEY); } catch (e) {}
+  const hashView = viewFromHash();
+  showView(VIEWS.includes(hashView) ? hashView : (savedView || (VIEWER ? "horarios" : "bosses")));
 
   renderRuns();
   if (!VIEWER) openGate();
