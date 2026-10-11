@@ -609,7 +609,7 @@
     opacity: 0.6;
   }
 
-  button#reset, button#export {
+  button#reset, button#export, button#import {
     flex: none;
     width: 30px;
     height: 28px;
@@ -623,7 +623,7 @@
     cursor: pointer;
   }
   button#reset:hover { border-color: var(--warn); color: var(--warn); }
-  button#export:hover { border-color: var(--accent); color: var(--accent); }
+  button#export:hover, button#import:hover { border-color: var(--accent); color: var(--accent); }
 
   /* Mesos por mula */
   .mesos-controls {
@@ -658,6 +658,20 @@
     cursor: pointer;
   }
   #mesos-restore:hover, #mesos-all:hover, #mesos-discard:hover { border-color: var(--accent); color: var(--accent); }
+  .mesos-cap {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .mesos-cap.full { border-color: var(--pending); color: var(--pending); }
+  .mesos-table tr.unpaid .share { color: var(--muted); font-weight: 600; }
+  .mesos-table .share small { display: block; font-size: 0.66rem; font-weight: 600; color: var(--pending); }
+  .mesos-table .share.capped { color: var(--pending); font-weight: 600; }
   .mesos-pending { display: flex; gap: 8px; margin-left: auto; }
   #mesos-save {
     background: var(--accent-2);
@@ -1925,6 +1939,131 @@
     border-radius: 999px;
     padding: 0 6px;
   }
+  /* === Celular: lectura cómoda ===
+     En pantallas angostas todo el panel tiene un solo scroll, las tablas se
+     vuelven tarjetas apiladas (sin scroll horizontal) y la barra de arriba
+     pasa a dos filas: título, y debajo relojes y acciones. */
+  @media (max-width: 700px) {
+    :root { --gap: 8px; }
+    body { font-size: 15px; }
+
+    /* Barra de arriba en dos filas */
+    header.top { display: block; min-height: 0; padding: 9px 12px 44px; }
+    header.top h1 { display: block; font-size: 1.12rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .side-info {
+      top: calc(var(--gap) + 42px);
+      left: calc(var(--gap) + 10px);
+      right: calc(var(--gap) + 10px);
+      align-items: center;
+      gap: 5px;
+    }
+    .side-info .week-chip { display: flex; }
+    .side-info .reset-timer { flex: none; padding: 4px 8px; font-size: 0.7rem; }
+    .side-actions { margin-left: auto; gap: 5px; }
+    .logout-btn { flex: none; width: 30px; }
+
+    /* Un solo scroll para todo el contenido */
+    main { overflow-y: auto; padding: 10px; }
+    section.view.active { display: block; height: auto; }
+    .table-wrap, .boss-grid, .mule-cards, .mule-list { overflow: visible; max-height: none; }
+    .mesos-layout { display: block; }
+    .mesos-dash { margin-bottom: 12px; }
+    .dash-tiles { grid-template-columns: 1fr 1fr; }
+    .dash-tile.hero { grid-column: 1 / -1; }
+    .dash-tile.hero .v { font-size: 1.5rem; }
+    /* Aire al final para que el botón del asistente no tape lo último */
+    section.view.active::after { content: ""; display: block; height: 84px; }
+
+    /* Controles y formularios: que ocupen el ancho */
+    .runs-progress { gap: 8px 10px; }
+    .runs-tabs { flex: 1 1 100%; }
+    .runs-tab { flex: 1; justify-content: center; }
+    .runs-mules { flex: 1 1 auto; }
+    .runs-mules select { flex: 1; max-width: none; }
+    .runs-bar { flex: 1 1 100%; max-width: none; }
+    .mesos-controls { gap: 8px; }
+    .mesos-pending { margin-left: 0; flex: 1 1 100%; }
+    .mesos-pending button { flex: 1; padding: 8px 10px; }
+    .drop-form > label, .drop-form > .drop-pick { flex: 1 1 100%; }
+    .drop-form .boss-pick-btn { width: 100%; }
+    .drop-form > button { flex: 1 1 100%; padding: 9px 14px; }
+    .boss-pick-menu { width: calc(100vw - 2 * var(--gap) - 24px); }
+    .add-char input { max-width: none; }
+    .restore-chars { margin-left: 0; flex: 1 1 100%; }
+    .mule-cards { grid-template-columns: minmax(0, 1fr); }
+
+    /* Tablas como tarjetas apiladas */
+    table { min-width: 0; font-size: 0.9rem; }
+    thead { display: none; }
+    tbody, tfoot { display: block; }
+    tbody tr, tfoot tr { display: grid; align-items: center; gap: 6px 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+    td { display: block; border: none; padding: 0; min-width: 0; }
+    td.runs-empty { grid-column: 1 / -1; padding: 14px 4px; }
+    .boss-name { white-space: normal; }
+
+    /* Mis runs: [✓] boss · mula / compañeros / días + hora */
+    .runs-table tbody tr { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "chk boss mule" "chk con time" "days days days"; }
+    .runs-table td:nth-child(1) { grid-area: chk; }
+    .runs-table td:nth-child(2) { grid-area: boss; }
+    .runs-table td:nth-child(3) { grid-area: mule; font-size: 0.8rem; color: var(--muted); text-align: right; }
+    .runs-table td:nth-child(4) { grid-area: con; font-size: 0.8rem; }
+    .runs-table td:nth-child(5) { grid-area: days; }
+    .runs-table td:nth-child(6) { grid-area: time; }
+    .runs-table input[type="checkbox"] { width: 22px; height: 22px; }
+    .runs-days { gap: 3px; }
+    .runs-days .day-chip { flex: 1 1 0; padding: 5px 0; text-align: center; }
+    .runs-table input[type="time"] { width: 108px; padding: 4px 6px; }
+
+    /* Info de mulas: [✓] boss · le toca / dificultad · party · cristal */
+    .mesos-table tbody tr { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; grid-template-areas: "chk boss boss share" "chk diff size cristal"; }
+    .mesos-table td:nth-child(1) { grid-area: chk; }
+    .mesos-table td:nth-child(2) { grid-area: boss; }
+    .mesos-table td:nth-child(3) { grid-area: diff; }
+    .mesos-table td:nth-child(4) { grid-area: size; }
+    .mesos-table td:nth-child(5) { grid-area: cristal; font-size: 0.74rem; color: var(--muted); }
+    .mesos-table td:nth-child(6) { grid-area: share; }
+    .mesos-table select { width: 100%; padding: 5px 2px 5px 6px; font-size: 0.82rem; }
+    .mesos-table input[type="checkbox"] { width: 22px; height: 22px; }
+    .mesos-table tfoot { position: static; }
+    .mesos-table tfoot tr { display: flex; justify-content: space-between; background: var(--panel-2); }
+    .mesos-table tfoot td { background: none; border: none; }
+    .mesos-table tfoot td:empty { display: none; }
+    .mesos-table tfoot td.num { transform: none; }
+
+    /* Mesitos: boss · ganado / mula · dificultad · party */
+    .mesos-table.mesitos-table tbody tr { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "boss boss gain" "mule diff size"; }
+    .mesos-table.mesitos-table td:nth-child(1) { grid-area: boss; }
+    .mesos-table.mesitos-table td:nth-child(2) { grid-area: mule; font-size: 0.8rem; color: var(--muted); }
+    .mesos-table.mesitos-table td:nth-child(3) { grid-area: diff; font-size: 0.8rem; color: var(--muted); }
+    .mesos-table.mesitos-table td:nth-child(4) { grid-area: size; font-size: 0.8rem; color: var(--muted); }
+    .mesos-table.mesitos-table td:nth-child(5) { grid-area: gain; font-size: 0.9rem; }
+
+    /* Diario: boss · fecha · ✕ / items / mula · nota */
+    .drops-table tbody tr { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "boss date del" "item item item" "mule note note"; }
+    .drops-table td:nth-child(1) { grid-area: date; }
+    .drops-table td:nth-child(2) { grid-area: boss; }
+    .drops-table td:nth-child(3) { grid-area: item; }
+    .drops-table td:nth-child(4) { grid-area: mule; font-size: 0.8rem; color: var(--muted); }
+    .drops-table td:nth-child(5) { grid-area: note; font-size: 0.8rem; text-align: right; }
+    .drops-table td:nth-child(6) { grid-area: del; }
+    .drops-table .drop-chip { white-space: normal; }
+
+    /* Barra de abajo: íconos más grandes y sin textos cortados */
+    .sidebar { gap: 4px; padding: 6px; }
+    .nav-item, .nav-item.sub { padding: 5px 0; }
+    .nav-ico, .nav-item.sub .nav-ico { width: 36px; height: 36px; font-size: 1.1rem; }
+    .nav-label { display: none; }
+    .nav-badge { top: -2px; right: 0; }
+    .nav-item.active { box-shadow: none; }
+
+    /* Chat y botón del asistente */
+    .chat-fab { bottom: calc(var(--gap) + 66px); }
+    .chat-toggle { width: 64px; height: 64px; }
+    .chat-toggle img { width: 54px; height: 54px; }
+    .chat { right: var(--gap); bottom: calc(var(--gap) + 140px); width: calc(100vw - 2 * var(--gap)); height: min(440px, calc(100dvh - 2 * var(--gap) - 160px)); }
+    .toasts { right: var(--gap); bottom: calc(var(--gap) + 140px); }
+  }
 </style>
 </head>
 <body>
@@ -1966,6 +2105,8 @@
       <div class="side-actions">
         <button id="reset" type="button" title="Restablecer todo: borra tus cambios guardados en este navegador" aria-label="Restablecer todo">↺</button>
         <button id="export" type="button" title="Exportar mis datos a un archivo (JSON)" aria-label="Exportar mis datos">⤓</button>
+        <button id="import" type="button" title="Importar mis datos desde un archivo exportado (JSON)" aria-label="Importar mis datos">⤒</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
         <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
           <span class="knob" id="theme-knob">🌙</span>
         </button>
@@ -2161,6 +2302,7 @@
       <label>Mula <select id="mesos-char"></select></label>
       <button type="button" id="mesos-restore" title="Borra lo guardado de esta mula y vuelve a lo que dicen las parties">↺ Volver a las parties</button>
       <button type="button" id="mesos-all" title="Marca todos los bosses de esta mula">＋ Marcar todos</button>
+      <span class="mesos-cap" id="mesos-cap" title="Cristales semanales de esta mula (Black Mage no cuenta)"></span>
       <span class="mesos-pending">
         <button type="button" id="mesos-discard" hidden>Descartar</button>
         <button type="button" id="mesos-save" hidden>✓ Guardar cambios</button>
@@ -2182,7 +2324,7 @@
         <tfoot>
           <tr>
             <td></td>
-            <td colspan="4">Total semanal de esta mula</td>
+            <td colspan="4">Total semanal de esta mula (sin Black Mage)</td>
             <td class="num" id="mesos-total"></td>
           </tr>
           <tr id="mesos-month-row" hidden>
@@ -2206,7 +2348,7 @@
       <div class="mesos-detail">
         <div class="runs-progress" id="mesitos-head"></div>
         <div class="table-wrap">
-          <table class="mesos-table">
+          <table class="mesos-table mesitos-table">
             <thead><tr><th>Boss</th><th>Mula</th><th>Dificultad</th><th>Party</th><th class="num">Ganado</th></tr></thead>
             <tbody id="mesitos-body"></tbody>
             <tfoot><tr><td colspan="4">Total de la semana</td><td class="num" id="mesitos-total"></td></tr></tfoot>
@@ -2951,15 +3093,32 @@
     // Black Mage es mensual (reset el 1° de cada mes): va aparte del total semanal.
     { id: "blackmage", name: "Black Mage",           icon: "icon-blackmage.png", max: 6, extra: true, monthly: true, def: "Hard", prices: { Hard: 4500000000, Extreme: 18000000000 } },
     { id: "jupiter",   name: "Jupiter",              icon: "icon-jupiter.png", max: 6, extra: true, def: "Normal",  prices: { Normal: 2965000000, Hard: 5953000000 } },
-    { id: "lotus",     name: "Lotus",                icon: "icon-lotus.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 444675000, Extreme: 1397500000 } },
+    { id: "lotus",     name: "Lotus",                icon: "icon-lotus.png", max: 6, extra: true, def: "Hard",    prices: { Normal: 162562500, Hard: 444675000, Extreme: 1397500000 } },
     { id: "verus",     name: "Verus Hilla",          icon: "icon-verus.png", max: 6, extra: true, def: "Hard",    prices: { Normal: 581880000, Hard: 762105000 } },
-    { id: "darknell",  name: "Darknell",             icon: "icon-darknell.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 667920000 } },
-    { id: "will",      name: "Will",                 icon: "icon-will.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 621810000 } },
-    { id: "slime",     name: "Guardian Angel Slime", icon: "icon-slime.png", max: 6, extra: true, def: "Chaos",   prices: { Chaos: 600578125 } },
-    { id: "gloom",     name: "Gloom",                icon: "icon-gloom.png", max: 6, extra: true, def: "Chaos",   prices: { Chaos: 563945000 } },
-    { id: "lucid",     name: "Lucid",                icon: "icon-lucid.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 504000000 } },
+    { id: "darknell",  name: "Darknell",             icon: "icon-darknell.png", max: 6, extra: true, def: "Hard",    prices: { Normal: 316875000, Hard: 667920000 } },
+    { id: "will",      name: "Will",                 icon: "icon-will.png", max: 6, extra: true, def: "Hard",    prices: { Easy: 246744750, Normal: 279075000, Hard: 621810000 } },
+    { id: "slime",     name: "Guardian Angel Slime", icon: "icon-slime.png", max: 6, extra: true, def: "Chaos",   prices: { Normal: 231673500, Chaos: 600578125 } },
+    { id: "gloom",     name: "Gloom",                icon: "icon-gloom.png", max: 6, extra: true, def: "Chaos",   prices: { Normal: 297675000, Chaos: 563945000 } },
+    { id: "lucid",     name: "Lucid",                icon: "icon-lucid.png", max: 6, extra: true, def: "Hard",    prices: { Easy: 237009375, Normal: 253828125, Hard: 504000000 } },
     { id: "damien",    name: "Damien",               icon: "icon-damien.png", max: 6, extra: true, def: "Hard",    prices: { Normal: 169000000, Hard: 421875000 } },
+    { id: "akechi",       name: "Akechi Mitsuhide", max: 6, extra: true, def: "Normal", prices: { Normal: 144000000 } },
+    { id: "papulatus",    name: "Papulatus",        max: 6, extra: true, def: "Chaos",  prices: { Chaos: 132250000 } },
+    { id: "vellum",       name: "Vellum",           max: 6, extra: true, def: "Chaos",  prices: { Chaos: 105062500 } },
+    { id: "magnus",       name: "Magnus",           max: 6, extra: true, def: "Hard",   prices: { Hard: 95062500 } },
+    { id: "princessno",   name: "Princess No",      max: 6, extra: true, def: "Normal", prices: { Normal: 81000000 } },
+    { id: "zakum",        name: "Zakum",            max: 6, extra: true, def: "Chaos",  prices: { Chaos: 81000000 } },
+    { id: "pierre",       name: "Pierre",           max: 6, extra: true, def: "Chaos",  prices: { Chaos: 81000000 } },
+    { id: "vonbon",       name: "Von Bon",          max: 6, extra: true, def: "Chaos",  prices: { Chaos: 81000000 } },
+    { id: "crimsonqueen", name: "Crimson Queen",    max: 6, extra: true, def: "Chaos",  prices: { Chaos: 81000000 } },
   ];
+  // Topes de cristales que se pueden vender por semana. Black Mage es mensual
+  // y no cuenta para ninguno de los dos.
+  const MULE_CRYSTAL_CAP = 14;
+  const ACCOUNT_CRYSTAL_CAP = 180;
+  const weeklyCrystals = state => BOSS_MESOS.filter(b => !b.monthly && state[b.id].on).length;
+  // En Info de mulas van todos en una sola lista, del que más meso da al que menos.
+  const topPrice = b => Math.max(...Object.values(b.prices));
+  const BOSSES_BY_MESOS = [...BOSS_MESOS].sort((a, b) => topPrice(b) - topPrice(a));
   const SIZE_NAMES = { 1: "Solo", 2: "Dúo", 3: "Trío", 4: "Cuarteto", 5: "Party de 5", 6: "Party de 6" };
   const BADGE_TO_DIFF = { Xtreme: "Extreme", Extreme: "Extreme", Chaos: "Chaos", Hard: "Hard", Normal: "Normal", Easy: "Easy" };
   const fmtMesos = n => Math.round(n).toLocaleString("es-CO");
@@ -3018,11 +3177,21 @@
     Object.entries(state).forEach(([id, s]) => { slim[id] = { on: s.on, diff: s.diff, size: s.size }; });
     try { localStorage.setItem(mesosKey(person, cls), JSON.stringify(slim)); } catch (e) {}
   }
+  // El juego paga como máximo 14 cristales semanales por mula: si hace más
+  // bosses, cobra los 14 que más le dan y el resto no suma mesos. Devuelve los
+  // ids de los bosses que sí pagan (los mensuales pagan siempre, van aparte).
+  function paidBosses(state) {
+    const share = b => b.prices[state[b.id].diff] / state[b.id].size;
+    const on = BOSS_MESOS.filter(b => state[b.id].on);
+    const weekly = on.filter(b => !b.monthly).sort((a, b) => share(b) - share(a)).slice(0, MULE_CRYSTAL_CAP);
+    return new Set([...weekly, ...on.filter(b => b.monthly)].map(b => b.id));
+  }
   // Totales separados: lo semanal y lo mensual (Black Mage) no se suman entre sí.
   function mesosTotal(state) {
+    const paid = paidBosses(state);
     return BOSS_MESOS.reduce((t, b) => {
       const s = state[b.id];
-      if (s.on) t[b.monthly ? "month" : "week"] += b.prices[s.diff] / s.size;
+      if (paid.has(b.id)) t[b.monthly ? "month" : "week"] += b.prices[s.diff] / s.size;
       return t;
     }, { week: 0, month: 0 });
   }
@@ -3066,17 +3235,18 @@
     if (!person || !cls) return;
     const state = mesosDraft ? mesosDraft.state : loadMesosState(person, cls);
     mesosSaveBtn.hidden = mesosDiscardBtn.hidden = !mesosDraft;
+    const capEl = document.getElementById("mesos-cap");
+    const used = weeklyCrystals(state);
+    const over = used - MULE_CRYSTAL_CAP;
+    capEl.textContent = `${used} / ${MULE_CRYSTAL_CAP} cristales` + (over > 0 ? ` · ${over} sin meso` : "");
+    capEl.classList.toggle("full", used >= MULE_CRYSTAL_CAP);
+    capEl.title = over > 0
+      ? `El juego paga ${MULE_CRYSTAL_CAP} cristales semanales por mula: los ${over} de menos valor no suman mesos. Black Mage no cuenta.`
+      : "Cristales semanales de esta mula (Black Mage no cuenta)";
     mesosBody.innerHTML = "";
 
-    let extraHeader = false;
-    BOSS_MESOS.forEach(b => {
-      if (b.extra && !extraHeader) {
-        extraHeader = true;
-        const g = document.createElement("tr");
-        g.className = "group";
-        g.innerHTML = `<td colspan="6">Otros bosses</td>`;
-        mesosBody.appendChild(g);
-      }
+    const paid = paidBosses(state);
+    BOSSES_BY_MESOS.forEach(b => {
       const s = state[b.id];
       const tr = document.createElement("tr");
       tr.classList.toggle("off", !s.on);
@@ -3086,7 +3256,10 @@
       chk.type = "checkbox";
       chk.checked = s.on;
       chk.setAttribute("aria-label", `¿${cls} hace ${b.name}?`);
-      chk.addEventListener("change", () => { s.on = chk.checked; touchMesos(person, cls, state); });
+      chk.addEventListener("change", () => {
+        s.on = chk.checked;
+        touchMesos(person, cls, state);
+      });
       tdOn.appendChild(chk);
 
       const tdName = document.createElement("td");
@@ -3102,14 +3275,22 @@
       const diffSel = document.createElement("select");
       Object.keys(b.prices).forEach(d => diffSel.add(new Option(d, d)));
       diffSel.value = s.diff;
-      diffSel.addEventListener("change", () => { s.diff = diffSel.value; s.on = true; touchMesos(person, cls, state); });
+      diffSel.addEventListener("change", () => {
+        s.diff = diffSel.value;
+        s.on = true;
+        touchMesos(person, cls, state);
+      });
       tdDiff.appendChild(diffSel);
 
       const tdSize = document.createElement("td");
       const sizeSel = document.createElement("select");
       for (let n = 1; n <= b.max; n++) sizeSel.add(new Option(SIZE_NAMES[n], n));
       sizeSel.value = s.size;
-      sizeSel.addEventListener("change", () => { s.size = +sizeSel.value; s.on = true; touchMesos(person, cls, state); });
+      sizeSel.addEventListener("change", () => {
+        s.size = +sizeSel.value;
+        s.on = true;
+        touchMesos(person, cls, state);
+      });
       tdSize.appendChild(sizeSel);
 
       const price = b.prices[s.diff];
@@ -3118,7 +3299,17 @@
       tdPrice.textContent = fmtMesos(price);
       const tdShare = document.createElement("td");
       tdShare.className = "num share";
-      tdShare.textContent = s.on ? fmtMesos(price / s.size) + (b.monthly ? " /mes" : "") : "—";
+      if (s.on && !paid.has(b.id)) {
+        // Lo hace, pero queda fuera de los 14 cristales que paga el juego.
+        tr.classList.add("unpaid");
+        tdShare.textContent = "0";
+        const why = document.createElement("small");
+        why.textContent = `fuera de los ${MULE_CRYSTAL_CAP}`;
+        tdShare.appendChild(why);
+        tdShare.title = `Esta mula ya tiene ${MULE_CRYSTAL_CAP} cristales de más valor: este boss no suma mesos (serían ${fmtMesos(price / s.size)}).`;
+      } else {
+        tdShare.textContent = s.on ? fmtMesos(price / s.size) + (b.monthly ? " /mes" : "") : "—";
+      }
 
       tr.append(tdOn, tdName, tdDiff, tdSize, tdPrice, tdShare);
       mesosBody.appendChild(tr);
@@ -3138,7 +3329,8 @@
   function renderMesosDash(person, cls) {
     const perChar = getPersonClassList(person).map(c => {
       const state = loadMesosState(person, c);
-      const crystals = BOSS_MESOS.filter(b => state[b.id].on && !b.monthly).length;
+      // Solo los cristales que pagan: como mucho 14 por mula.
+      const crystals = Math.min(weeklyCrystals(state), MULE_CRYSTAL_CAP);
       return { cls: c, crystals, ...mesosTotal(state) };
     });
     const sumWeek = perChar.reduce((a, m) => a + m.week, 0);
@@ -3169,11 +3361,11 @@
       t.title = `${label}: ${small}`;
       tiles.appendChild(t);
     };
-    tile("Total semanal", fmtShort(sumWeek), fmtMesos(sumWeek) + " mesos", true);
-    tile("Mensual", sumMonth ? fmtShort(sumMonth) : "—", sumMonth ? fmtMesos(sumMonth) + " mesos" : "Sin Black Mage");
+    tile("Total semanal", fmtShort(sumWeek), fmtMesos(sumWeek) + " mesos · sin Black Mage", true);
+    tile("Mensual · Black Mage", sumMonth ? fmtShort(sumMonth) : "—", sumMonth ? fmtMesos(sumMonth) + " mesos al mes" : "Nadie lo hace");
     tile("Promedio por mula", active ? fmtShort(sumWeek / active) : "—", "por semana");
     tile("Mulas con bosses", `${active} de ${perChar.length}`, "con algún cristal");
-    tile("Cristales", String(crystals), "por semana");
+    tile("Cristales", `${crystals} de ${ACCOUNT_CRYSTAL_CAP}`, crystals > ACCOUNT_CRYSTAL_CAP ? "pasa el tope de la cuenta" : "que pagan, toda la cuenta");
 
     const listLabel = document.createElement("span");
     listLabel.className = "dash-label";
@@ -3189,11 +3381,11 @@
       row.children[1].textContent = m.week ? fmtShort(m.week) : "—";
       if (m.month) {
         const extra = document.createElement("small");
-        extra.textContent = ` +${fmtShort(m.month)}/mes`;
+        extra.textContent = ` +${fmtShort(m.month)}/mes BM`;
         row.children[1].appendChild(extra);
       }
       row.querySelector(".mule-bar span").style.width = `${(m.week / maxWeek) * 100}%`;
-      row.title = `${m.cls}: ${fmtMesos(m.week)} /semana` + (m.month ? ` + ${fmtMesos(m.month)} /mes` : "") +
+      row.title = `${m.cls}: ${fmtMesos(m.week)} /semana` + (m.month ? ` + ${fmtMesos(m.month)} /mes de Black Mage` : "") +
         ` · ${m.crystals} cristal${m.crystals === 1 ? "" : "es"}`;
       row.addEventListener("click", () => { mesosCharSel.value = m.cls; renderMesos(); });
       list.appendChild(row);
@@ -3362,13 +3554,33 @@
     const s = loadMesosState(VIEWER, r.cls)[r.boss.id];
     return { diff: s.diff, size: s.size, mesos: r.boss.prices[s.diff] / s.size };
   }
+  // Mesos que paga cada run de una lista, con el tope de 14 cristales
+  // semanales por mula: las de menos valor que sobren quedan en 0.
+  function paidRunMesos(runs) {
+    const out = new Map();
+    const perMule = {};
+    runs.forEach(r => {
+      const m = runMesos(r);
+      out.set(r.id, m);
+      if (!r.boss.monthly) (perMule[r.cls] = perMule[r.cls] || []).push({ id: r.id, m });
+    });
+    Object.values(perMule).forEach(list => {
+      list.sort((a, b) => b.m.mesos - a.m.mesos).slice(MULE_CRYSTAL_CAP)
+        .forEach(x => out.set(x.id, { ...x.m, mesos: 0, capped: true }));
+    });
+    return out;
+  }
+  const possibleMesos = runs => {
+    const weekly = runs.filter(r => !r.boss.monthly);
+    return [...paidRunMesos(weekly).values()].reduce((a, m) => a + m.mesos, 0);
+  };
   function syncEarnings(runs) {
-    const items = runs
-      .filter(r => {
-        const w = runDoneWeek(r.id);
-        return w !== null && (!r.boss.monthly || w === WEEK_START);
-      })
-      .map(r => ({ boss: r.boss.id, cls: r.cls, ...runMesos(r) }));
+    const done = runs.filter(r => {
+      const w = runDoneWeek(r.id);
+      return w !== null && (!r.boss.monthly || w === WEEK_START);
+    });
+    const paid = paidRunMesos(done);
+    const items = done.map(r => ({ boss: r.boss.id, cls: r.cls, ...paid.get(r.id) }));
     if (items.length) earnings[WEEK_START] = { items };
     else delete earnings[WEEK_START];
     try { localStorage.setItem(EARN_KEY, JSON.stringify(earnings)); } catch (e) {}
@@ -3766,7 +3978,7 @@
     const sum = withData.reduce((a, t) => a + t.total, 0);
     const best = withData.reduce((a, t) => (t.total > (a ? a.total : 0) ? t : a), null);
     const now = weekTotal(WEEK_START);
-    const possible = lastRuns.filter(r => !r.boss.monthly).reduce((a, r) => a + runMesos(r).mesos, 0);
+    const possible = possibleMesos(lastRuns);
     const maxTotal = Math.max(...totals.map(t => t.total), 1);
 
     mesitosDash.innerHTML = "";
@@ -3856,7 +4068,8 @@
       tdSize.textContent = SIZE_NAMES[i.size] || i.size;
       const tdMesos = document.createElement("td");
       tdMesos.className = "num share";
-      tdMesos.textContent = fmtMesos(i.mesos);
+      tdMesos.textContent = i.capped ? "0 · fuera de los 14" : fmtMesos(i.mesos);
+      if (i.capped) { tdMesos.classList.add("capped"); tdMesos.title = `${i.cls} ya cobró ${MULE_CRYSTAL_CAP} cristales de más valor esta semana.`; }
       tr.append(tdBoss, tdCls, tdDiff, tdSize, tdMesos);
       mesitosBody.appendChild(tr);
     });
@@ -4339,6 +4552,7 @@
       const info = muleInfo[cls] || {};
       const hidden = HIDDEN_CHARS.includes(cls);
       const state = loadMesosState(VIEWER, cls);
+      const paid = paidBosses(state);
       return {
         class: cls,
         source: MY_CHARS.includes(cls) ? "added" : "roster",
@@ -4354,7 +4568,8 @@
           partySize: state[b.id].size,
           fromParty: state[b.id].fromParty,
           monthly: !!b.monthly,
-          mesos: Math.round(b.prices[state[b.id].diff] / state[b.id].size),
+          mesos: paid.has(b.id) ? Math.round(b.prices[state[b.id].diff] / state[b.id].size) : 0,
+          paid: paid.has(b.id),
         })),
       };
     });
@@ -4418,6 +4633,47 @@
     toast("Datos exportados: revisa tus descargas");
   });
 
+  // --- Importar mis datos ---
+  // Solo recibe el JSON que genera "Exportar": tiene que ser de esta app, de
+  // la misma persona conectada y traer la sección "raw", que es lo que se
+  // restaura (reemplaza todo lo guardado de esa persona en este navegador).
+  // Devuelve un texto de error, o null si el archivo sirve.
+  function checkImport(data) {
+    if (!data || typeof data !== "object" || data.app !== "bossing-imanity") return "Ese archivo no es un export de Bossing Imanity.";
+    if (data.exportVersion !== 1) return "Ese export es de una versión que esta página no sabe leer.";
+    if (data.user !== VIEWER) return `Ese archivo es de ${ROSTER.some(p => p.name === data.user) ? data.user : "otro usuario"}, no de ${VIEWER}.`;
+    const raw = data.raw;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return "El archivo no trae los datos guardados (sección \"raw\").";
+    if (Object.entries(raw).some(([k, v]) => typeof v !== "string" || !k)) return "El archivo está dañado: tiene datos con un formato inesperado.";
+    return null;
+  }
+  function applyImport(data) {
+    Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k));
+    Object.entries(data.raw).forEach(([k, v]) => localStorage.setItem(PREFIX + k, v));
+  }
+  const importFile = document.getElementById("import-file");
+  document.getElementById("import").addEventListener("click", () => { if (VIEWER) importFile.click(); });
+  importFile.addEventListener("change", () => {
+    const file = importFile.files[0];
+    importFile.value = ""; // para poder elegir el mismo archivo otra vez
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast("Ese archivo es demasiado grande para ser un export.", { type: "error" }); return; }
+    file.text().then(text => {
+      let data;
+      try { data = JSON.parse(text); } catch (e) { toast("Ese archivo no es un JSON válido.", { type: "error" }); return; }
+      const error = checkImport(data);
+      if (error) { toast(error, { type: "error" }); return; }
+      const when = String(data.exportedAt || "").slice(0, 10);
+      askConfirm(`¿Importar los datos de ${VIEWER}${when ? ` exportados el ${when}` : ""}? Reemplaza todo lo que tienes guardado ahora en este navegador.`, "Sí, importar").then(ok => {
+        if (!ok) return;
+        try { applyImport(data); } catch (e) { toast("No se pudo importar: el navegador no dejó guardar.", { type: "error" }); return; }
+        mesosDraft = null;
+        flashAfterReload("Datos importados");
+        location.reload();
+      });
+    });
+  });
+
   // --- Asistente: mini chat con respuestas automáticas (reglas fijas, sin IA) ---
   // Entiende saludos y pedidos simples sobre las runs de quien está conectado:
   // "completa al battle mage", "desmarca la sia", "qué me falta", "cuánto llevo",
@@ -4457,11 +4713,14 @@
     adversary: ["adversary", "adver"], baldrix: ["baldrix"], blackmage: ["blackmage"], jupiter: ["jupiter"],
     lotus: ["lotus"], verus: ["verus", "vhilla", "verushilla"], darknell: ["darknell"], will: ["will"],
     slime: ["slime"], gloom: ["gloom"], lucid: ["lucid"], damien: ["damien"],
+    akechi: ["akechi", "mitsuhide"], papulatus: ["papulatus", "papu"], vellum: ["vellum"], magnus: ["magnus"],
+    princessno: ["princessno", "pno"], zakum: ["zakum"], pierre: ["pierre"], vonbon: ["vonbon"],
+    crimsonqueen: ["crimsonqueen", "cq"],
   };
   function botFindBoss(text) {
     const flat = botFlat(text);
     const words = botNorm(text).split(" ");
-    const id = Object.keys(BOSS_ALIASES).find(b => BOSS_ALIASES[b].some(a => words.includes(a) || (a.length > 6 && flat.includes(a))));
+    const id = Object.keys(BOSS_ALIASES).find(b => BOSS_ALIASES[b].some(a => words.includes(a) || (a.length >= 6 && flat.includes(a))));
     return id ? BOSS_MESOS.find(b => b.id === id) : null;
   }
   function botSetDone(runs, done) {
@@ -4582,6 +4841,11 @@
 
     if (found.ask) { remember(); return found.ask; }
     if (!found.items.length) {
+      // Boss que no tiene items cargados en el diario (Papulatus, Zakum…).
+      if (boss && !DROP_ITEMS.some(i => boss in i.bosses)) {
+        botPendingAdd = null;
+        return `${dropBossName(boss)} no tiene items cargados en el diario todavía.`;
+      }
       remember();
       return boss
         ? `No ubiqué qué item fue. De ${dropBossName(boss)} puede caer: ${namesOf(DROP_ITEMS.filter(i => boss in i.bosses).map(i => i.id))}. ¿Cuál fue?`
@@ -4677,7 +4941,7 @@
     // Mesos de la semana
     if (has(/\b(mesos|mesitos|gane|ganado|ganando|llevo|cuanto)\b/) && !has(/\b(abr\w*|ir|muestra\w*|llevame|ve)\b/)) {
       const now = weekTotal(WEEK_START);
-      const possible = runs.filter(r => !r.boss.monthly).reduce((a, r) => a + runMesos(r).mesos, 0);
+      const possible = possibleMesos(runs);
       if (!now) return possible ? `Todavía nada esta semana. Tienes ${fmtShort(possible)} posibles si haces todo.` : "Todavía no tienes runs esta semana.";
       return `Esta semana llevas ${fmtShort(now)}` + (possible ? ` de ${fmtShort(possible)} posibles (${Math.min(100, Math.round((now / possible) * 100))}%).` : ".");
     }
