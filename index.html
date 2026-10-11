@@ -10,7 +10,7 @@
   (function () {
     // Limpieza única: al subir STORAGE_VERSION se borra todo lo guardado por
     // el sitio en este navegador (sesión incluida), así vuelve a pedir login.
-    var STORAGE_VERSION = "2";
+    var STORAGE_VERSION = "3";
     try {
       if (localStorage.getItem("bp_storage_version") !== STORAGE_VERSION) {
         Object.keys(localStorage)
@@ -84,7 +84,7 @@
     margin: 0;
     height: 100dvh;
     overflow: hidden;
-    background: var(--bg) url("Aldea_encantada_bajo_la_luna_llena_1.jpg") center / cover no-repeat;
+    background: var(--bg) url("Halloween_magico_en_el_castillo_lunar.jpg") center / cover no-repeat;
     color: var(--text);
     font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.45;
@@ -609,7 +609,7 @@
     opacity: 0.6;
   }
 
-  button#reset {
+  button#reset, button#export {
     flex: none;
     width: 30px;
     height: 28px;
@@ -623,6 +623,7 @@
     cursor: pointer;
   }
   button#reset:hover { border-color: var(--warn); color: var(--warn); }
+  button#export:hover { border-color: var(--accent); color: var(--accent); }
 
   /* Mesos por mula */
   .mesos-controls {
@@ -647,7 +648,7 @@
     font-size: 0.85rem;
     cursor: pointer;
   }
-  #mesos-restore {
+  #mesos-restore, #mesos-all, #mesos-discard {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--muted);
@@ -656,7 +657,19 @@
     font-size: 0.78rem;
     cursor: pointer;
   }
-  #mesos-restore:hover { border-color: var(--accent); color: var(--accent); }
+  #mesos-restore:hover, #mesos-all:hover, #mesos-discard:hover { border-color: var(--accent); color: var(--accent); }
+  .mesos-pending { display: flex; gap: 8px; margin-left: auto; }
+  #mesos-save {
+    background: var(--accent-2);
+    border: 1px solid var(--accent-2);
+    color: #10241d;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #mesos-save[hidden], #mesos-discard[hidden] { display: none; }
   .mesos-table td, .mesos-table th { vertical-align: middle; }
   .mesos-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .mesos-table input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-2); cursor: pointer; }
@@ -747,6 +760,14 @@
   .mule-row:hover .mule-bar, .mule-row.active .mule-bar { background: var(--border); }
   .mule-row .mule-bar span { display: block; height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--accent); }
   .mule-row.zero .mule-bar span { display: none; }
+  /* Portátiles: el resumen se angosta y la tabla aprieta el aire para que
+     entren todas las columnas sin scroll horizontal. */
+  @media (max-width: 1500px) {
+    .mesos-layout { grid-template-columns: minmax(220px, 270px) minmax(0, 1fr); }
+    .mesos-table th, .mesos-table td { padding-left: 7px; padding-right: 7px; }
+    .mesos-table select { padding: 4px 4px; }
+    .mesos-table .boss-name .from-party { display: none; }
+  }
   @media (max-width: 1000px) {
     .mesos-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
     .dash-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -820,6 +841,8 @@
   .viewer-dialog p { margin: 0 0 18px; color: var(--muted); font-size: 0.88rem; }
   /* Sin sesión: solo el fondo, el reproductor y el login. El reproductor
      queda por encima del velo del login para que se pueda usar. */
+  .logged-out body { background-image: url("Marco_de_Halloween_con_Castillo_y_Luna.jpg"); }
+  .logged-out body::before { background: rgba(12, 8, 24, 0.12); }
   .logged-out .content,
   .logged-out .sidebar > :not(.player),
   .logged-out .sidebar::before { display: none; }
@@ -835,7 +858,23 @@
   }
   .logged-out .player { pointer-events: auto; background: var(--glass); }
   .logged-out .viewer-gate { background: none; }
-  .logged-out .viewer-dialog { background: var(--glass); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); }
+  /* El fondo del login trae un marco dibujado en el centro: el formulario va
+     adentro, sin caja propia. --s es cuántos px de pantalla ocupa 1 px de la
+     imagen (1672×941, en "cover"), así el formulario escala con el marco. */
+  .logged-out .viewer-dialog {
+    --s: max(calc(100vw / 1672), calc(100dvh / 941));
+    width: calc(var(--s) * 370);
+    max-width: calc(100vw - 32px);
+    padding: 0 calc(var(--s) * 14);
+    background: none;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+    text-align: center;
+  }
+  .logged-out .viewer-dialog > p { display: none; }
+  .logged-out .viewer-dialog h2 { font-size: 1.15rem; margin-bottom: 12px; }
+  .logged-out .login-form label { text-align: left; }
   .viewer-dialog { width: min(380px, 100%); }
   .login-form { display: flex; flex-direction: column; gap: 12px; }
   .login-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
@@ -951,6 +990,100 @@
   .drops-table .boss-name { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
   .drops-table .boss-name img { width: 22px; height: 22px; }
   .drops-table .drop-item { font-weight: 700; color: var(--glow); }
+  .drops-table .drop-chip { display: inline-flex; align-items: center; gap: 6px; margin: 1px 12px 1px 0; white-space: nowrap; }
+  .drops-table .drop-item img { width: 28px; height: 28px; object-fit: contain; }
+  /* Selector de boss con miniaturas: botón + menú en grilla */
+  .boss-pick { position: relative; }
+  .drop-form .boss-pick-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 190px;
+    padding: 3px 10px 3px 4px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .drop-form .boss-pick-btn:hover, .drop-form .boss-pick-btn[aria-expanded="true"] { border-color: var(--accent); }
+  .boss-pick-btn .caret { margin-left: auto; color: var(--muted); font-size: 0.7rem; }
+  .boss-thumb {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  /* Boss sin miniatura todavía: su inicial */
+  span.boss-thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--muted);
+    background: var(--card);
+  }
+  .boss-pick-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 30;
+    width: min(460px, calc(100vw - 48px));
+    max-height: min(360px, 60dvh);
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px;
+    padding: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    animation: toast-in .15s ease-out;
+  }
+  .boss-pick-menu[hidden] { display: none; }
+  .drop-form .boss-pick-menu button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 4px 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .boss-pick-menu button .boss-thumb { width: 40px; height: 40px; border-radius: 10px; font-size: 1rem; }
+  .drop-form .boss-pick-menu button:hover { background: var(--panel-2); border-color: var(--border); }
+  .drop-form .boss-pick-menu button.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  /* Selector de "qué cayó": una miniatura por item del boss elegido */
+  .drop-pick { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .drop-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .drop-form .drop-tile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px 2px 4px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .drop-tile img { width: 28px; height: 28px; object-fit: contain; }
+  .drop-tile span { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+  .drop-tile small { font-size: 0.64rem; font-weight: 500; color: var(--muted); }
+  .drop-form .drop-tile:hover { border-color: var(--glow); }
+  .drop-form .drop-tile.active { border-color: var(--glow); background: color-mix(in srgb, var(--glow) 20%, var(--panel-2)); box-shadow: 0 0 0 1px var(--glow); }
   .drops-table .drop-when { color: var(--muted); font-size: 0.82rem; white-space: nowrap; }
   .drops-table .drop-del { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; }
   .drops-table .drop-del:hover { color: var(--danger); }
@@ -1125,6 +1258,11 @@
     box-shadow: 0 4px 12px -4px var(--glow);
   }
   .nav-label { flex: 1; min-width: 0; }
+  /* Grupos con submenú: los hijos van indentados, con una línea que los une */
+  .nav-group { display: flex; flex-direction: column; gap: 3px; }
+  .nav-sub { display: flex; flex-direction: column; gap: 2px; margin-left: 28px; padding-left: 8px; border-left: 1px solid var(--border); }
+  .nav-item.sub { padding: 4px 8px; font-size: 0.86rem; border-radius: 10px; gap: 9px; }
+  .nav-item.sub .nav-ico { width: 28px; height: 28px; font-size: 0.9rem; border-radius: 8px; }
   .nav-badge {
     background: var(--glow);
     color: #1a1020;
@@ -1138,6 +1276,267 @@
   .sidebar-foot { margin: 0; padding: 0 6px; font-size: 0.68rem; color: var(--muted); flex: none; }
   section.view { display: none; }
   section.view.active { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+  /* Toasts (avisos) y diálogo de confirmación propios, en vez de los del navegador */
+  .toasts {
+    position: fixed;
+    right: calc(var(--gap) + 14px);
+    bottom: calc(var(--gap) + 128px); /* por encima del botón del asistente */
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    --tone: var(--accent-2);
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(380px, calc(100vw - 2 * var(--gap)));
+    padding: 10px 12px 10px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--tone);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    font-size: 0.88rem;
+    animation: toast-in .22s ease-out;
+  }
+  .toast.error { --tone: var(--danger); }
+  .toast.info { --tone: var(--accent); }
+  .toast.out { animation: toast-out .18s ease-in forwards; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: none; } }
+  @keyframes toast-out { to { opacity: 0; transform: translateX(16px); } }
+  .toast-ico {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--tone);
+  }
+  .toast-msg { flex: 1; min-width: 0; }
+  .toast button {
+    flex: none;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  .toast .toast-action { color: var(--accent); font-weight: 700; }
+  .toast button:hover { color: var(--text); }
+  .confirm-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(8, 9, 14, 0.7);
+  }
+  .confirm-gate[hidden] { display: none; }
+  .confirm-dialog {
+    width: min(380px, 100%);
+    padding: 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+    animation: toast-in .18s ease-out;
+  }
+  .confirm-dialog p { margin: 0 0 16px; font-size: 0.95rem; }
+  .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .confirm-actions button {
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .confirm-actions .confirm-ok { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .confirm-actions button:hover { filter: brightness(1.12); }
+  .runs-complete {
+    background: transparent;
+    border: 1px solid var(--accent-2);
+    color: var(--accent-2);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .runs-complete:hover { background: color-mix(in srgb, var(--accent-2) 14%, transparent); }
+  .runs-complete.undo { border-color: var(--border); color: var(--muted); }
+
+  /* Mini chat del asistente (respuestas automáticas) */
+  /* Botón flotante abajo a la derecha; el chat se abre encima de él */
+  /* Contenedor del botón: se puede minimizar hacia la derecha (queda medio
+     oculto) y vuelve a salir al pasarle el mouse o al enfocarlo. */
+  .chat-fab {
+    --fab-edge: calc(var(--gap) + 14px);
+    position: fixed;
+    right: var(--fab-edge);
+    bottom: var(--fab-edge);
+    z-index: 70;
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+  }
+  .chat-fab.mini { transform: translateX(calc(var(--fab-edge) + 55%)); }
+  .chat-fab.mini:hover, .chat-fab.mini:focus-within { transform: none; }
+  /* Zona invisible hasta el borde de la pantalla: evita que parpadee al
+     salir de debajo del mouse cuando se despliega. */
+  .chat-fab::after { content: ""; position: absolute; top: 0; bottom: 0; left: 100%; width: calc(var(--fab-edge) + 70px); }
+  .chat-toggle {
+    width: 104px;
+    height: 104px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #4a4d5c, #2b2d38);
+    box-shadow: 0 10px 26px -6px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    animation: fab-float 3.6s ease-in-out infinite;
+  }
+  .chat-toggle:hover { filter: brightness(1.15); }
+  /* El icono va en espejo, mirando hacia la izquierda (hacia el contenido),
+     y se mece un poquito para que parezca vivo. */
+  .chat-toggle img { width: 88px; height: 88px; object-fit: contain; transform: scaleX(-1); animation: fab-wiggle 3.6s ease-in-out infinite; }
+  @keyframes fab-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes fab-wiggle {
+    0%, 100% { transform: scaleX(-1) rotate(-4deg); }
+    50% { transform: scaleX(-1) rotate(4deg) scale(1.05); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chat-toggle, .chat-toggle img { animation: none; }
+    .chat-fab { transition: none; }
+  }
+  .chat-mini-btn {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    z-index: 1;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s ease;
+  }
+  .chat-fab:hover .chat-mini-btn, .chat-mini-btn:focus-visible { opacity: 1; }
+  .chat-mini-btn:hover { border-color: var(--accent); }
+  .chat-avatar { flex: none; width: 34px; height: 34px; object-fit: contain; transform: scaleX(-1); }
+  /* Los totales al pie de las tablas quedan justo bajo el botón: se corren un poco. */
+  .mesos-table tfoot td.num { transform: translateX(-112px); }
+  .logged-out .chat-fab, .logged-out .chat { display: none; }
+  .logged-out .toasts { bottom: var(--gap); }
+  .chat {
+    position: fixed;
+    right: calc(var(--gap) + 14px);
+    bottom: calc(var(--gap) + 128px);
+    z-index: 70;
+    width: min(360px, calc(100vw - 2 * var(--gap) - 28px));
+    height: min(480px, calc(100dvh - 2 * var(--gap) - 152px));
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    animation: toast-in .18s ease-out;
+  }
+  .chat[hidden] { display: none; }
+  .chat-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 35%, transparent), color-mix(in srgb, var(--glow) 22%, transparent));
+    border-bottom: 1px solid var(--border);
+  }
+  .chat-head div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; }
+  .chat-head small { font-size: 0.68rem; color: var(--muted); }
+  .chat-head button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 4px; }
+  .chat-head button:hover { color: var(--text); }
+  .chat-log { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+  .chat-msg {
+    max-width: 86%;
+    padding: 7px 11px;
+    border-radius: 14px;
+    font-size: 0.86rem;
+    line-height: 1.4;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .chat-msg.bot { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .chat-msg.me { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .chat-chips { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
+  .chat-chips button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.74rem;
+    padding: 3px 9px;
+    cursor: pointer;
+  }
+  .chat-chips button:hover { border-color: var(--accent); color: var(--text); }
+  .chat-form { flex: none; display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--border); }
+  .chat-form input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 0.86rem;
+  }
+  .chat-form input:focus { outline: none; border-color: var(--accent); }
+  .chat-form button {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--glow));
+    color: #fff;
+    cursor: pointer;
+  }
+  /* En celular va por encima de la barra de abajo */
+  @media (max-width: 700px) {
+    .chat-fab { bottom: calc(var(--gap) + 76px); }
+    .chat-toggle { width: 76px; height: 76px; }
+    .chat-toggle img { width: 64px; height: 64px; }
+    .chat { bottom: calc(var(--gap) + 160px); height: min(440px, calc(100dvh - 2 * var(--gap) - 180px)); }
+    .toasts { bottom: calc(var(--gap) + 160px); }
+  }
 
   /* Reloj de la semana / reset + acciones, justo arriba del reproductor */
   .side-info { flex: none; margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
@@ -1260,6 +1659,9 @@
 
   @media (max-height: 820px) {
     .nav-heading, .sidebar-foot { display: none; }
+    .nav { gap: 3px; }
+    .nav-item { padding: 4px 10px; }
+    .nav-ico { width: 32px; height: 32px; font-size: 1rem; }
   }
   /* Pantallas bajas: se achica el aire para que la barra entre sin scrollear */
   @media (max-height: 700px) {
@@ -1284,6 +1686,10 @@
     .nav { width: 100%; }
     .nav-item { flex-direction: column; gap: 4px; padding: 8px 2px; text-align: center; font-size: 0.66rem; line-height: 1.15; }
     .nav-item:hover { transform: none; }
+    /* En el riel no hay submenús: todos los ítems quedan al mismo nivel */
+    .nav-group, .nav-sub { display: contents; }
+    .nav-item.sub { padding: 8px 2px; font-size: 0.66rem; gap: 4px; }
+    .nav-item.sub .nav-ico { width: 34px; height: 34px; font-size: 1rem; }
     .nav-label { flex: none; }
     .nav-badge { position: absolute; top: 2px; right: 6px; }
     .player { padding: 8px 6px; border-radius: 14px; }
@@ -1313,6 +1719,7 @@
     /* Sin desenfoque en la barra de abajo: así los relojes y acciones pueden
        ubicarse arriba a la derecha, sobre la barra del título. */
     .sidebar.glass { position: static; background: var(--glass-main); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .logged-out .sidebar.glass { position: relative; background: none; }
     .side-info {
       position: absolute;
       top: calc(var(--gap) + 7px);
@@ -1330,8 +1737,8 @@
     .viewer-btn { order: 2; }
     .viewer-btn .dot { width: 32px; height: 32px; }
     .nav { order: 1; flex: 1; flex-direction: row; gap: 2px; min-width: 0; }
-    .nav-item { flex: 1 1 0; min-width: 0; padding: 4px 2px; font-size: 0.6rem; }
-    .nav-ico { width: 32px; height: 32px; font-size: 1rem; }
+    .nav-item, .nav-item.sub { flex: 1 1 0; min-width: 0; padding: 4px 2px; font-size: 0.6rem; }
+    .nav-ico, .nav-item.sub .nav-ico { width: 32px; height: 32px; font-size: 1rem; }
     .nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .player { order: 3; margin-top: 0; padding: 4px; border-radius: 999px; }
     .player-ctrl { flex-direction: row; }
@@ -1351,6 +1758,18 @@
     color: var(--muted);
   }
   .add-char[hidden] { display: none; }
+  .restore-chars { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: 8px; }
+  .restore-chars[hidden] { display: none; }
+  .add-char .restore-chars button {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+  .add-char .restore-chars button:hover { border-color: var(--accent); color: var(--text); }
   .add-char strong { color: var(--text); }
   .add-char input {
     flex: 1 1 180px;
@@ -1517,19 +1936,28 @@
       <div class="brand-text"><strong>Bossing Imanity</strong><span>Parties, runs y mesos</span></div>
     </div>
 
-    <button type="button" class="viewer-btn" id="viewer-btn" title="Elegí quién sos">
+    <button type="button" class="viewer-btn" id="viewer-btn" title="Elige quién eres">
       <span class="dot">?</span>
-      <span class="viewer-text"><small>Jugando como</small><span class="viewer-name">¿Quién sos?</span></span>
+      <span class="viewer-text"><small>Jugando como</small><span class="viewer-name">¿Quién eres?</span></span>
       <span class="viewer-swap" aria-hidden="true">⇄</span>
     </button>
 
     <nav class="nav" aria-label="Secciones">
       <p class="nav-heading">Secciones</p>
-      <button type="button" class="nav-item" data-view="horarios"><span class="nav-ico">🗓️</span><span class="nav-label">Mis runs</span><span class="nav-badge" id="nav-runs-badge" hidden></span></button>
-      <button type="button" class="nav-item" data-view="bosses"><span class="nav-ico">⚔️</span><span class="nav-label">Bosses</span></button>
-      <button type="button" class="nav-item" data-view="mesos"><span class="nav-ico">💰</span><span class="nav-label">Info de mulas</span></button>
-      <button type="button" class="nav-item" data-view="diario"><span class="nav-ico">📖</span><span class="nav-label">Diario de pitches</span></button>
-      <button type="button" class="nav-item" data-view="roster"><span class="nav-ico">👥</span><span class="nav-label">Roster</span></button>
+      <div class="nav-group">
+        <button type="button" class="nav-item" data-view="roster"><span class="nav-ico">👥</span><span class="nav-label">Mis personajes</span></button>
+        <div class="nav-sub">
+          <button type="button" class="nav-item sub" data-view="mesos"><span class="nav-ico">💰</span><span class="nav-label">Info de mulas</span></button>
+          <button type="button" class="nav-item sub" data-view="diario"><span class="nav-ico">📖</span><span class="nav-label">Diario de pitches</span></button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button type="button" class="nav-item" data-view="bosses"><span class="nav-ico">⚔️</span><span class="nav-label">Bosses</span></button>
+        <div class="nav-sub">
+          <button type="button" class="nav-item sub" data-view="horarios"><span class="nav-ico">🗓️</span><span class="nav-label">Mis runs</span><span class="nav-badge" id="nav-runs-badge" hidden></span></button>
+          <button type="button" class="nav-item sub" data-view="mesitos"><span class="nav-ico">🪙</span><span class="nav-label">Mesitos</span></button>
+        </div>
+      </div>
     </nav>
 
     <div class="side-info">
@@ -1537,6 +1965,7 @@
       <span class="reset-timer" id="reset-timer" title="Reset diario a las 7:00 pm, hora Colombia"></span>
       <div class="side-actions">
         <button id="reset" type="button" title="Restablecer todo: borra tus cambios guardados en este navegador" aria-label="Restablecer todo">↺</button>
+        <button id="export" type="button" title="Exportar mis datos a un archivo (JSON)" aria-label="Exportar mis datos">⤓</button>
         <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Cambiar entre tema oscuro y claro">
           <span class="knob" id="theme-knob">🌙</span>
         </button>
@@ -1577,12 +2006,13 @@
 
   <!-- ROSTER -->
   <section id="roster" class="view">
-    <h2>Roster <span class="tag">Tus mulas</span></h2>
-    <p class="desc">Una cartita por cada mula tuya: ponele nombre, nivel y CP (se guardan solo en tu navegador). Las mulas de la base son fijas; las que sumes vos se pueden quitar.</p>
+    <h2>Mis personajes <span class="tag">Roster</span></h2>
+    <p class="desc">Una cartita por cada mula tuya: ponle nombre, nivel y CP (se guardan solo en tu navegador). Puedes quitar cualquiera con la ✕; las del roster quedan en "Quitadas" para restaurarlas.</p>
     <form class="add-char" id="add-char" hidden>
       <label for="add-char-name">Agregar mula a <strong id="add-char-who"></strong></label>
       <input type="text" id="add-char-name" placeholder="Clase. Ej: Hero, Mercedes…" maxlength="40" autocomplete="off" required>
       <button type="submit">＋ Agregar</button>
+      <span class="restore-chars" id="restore-chars" hidden></span>
     </form>
     <div class="mule-cards" id="mule-cards"></div>
   </section>
@@ -1722,14 +2152,19 @@
   <!-- MESOS POR MULA -->
   <section id="mesos" class="view">
     <h2>Información de mulas <span class="tag">Mesos y cristales</span></h2>
-    <p class="desc">A la izquierda, el resumen de mesos del jugador; tocá una mula para ver su detalle. Cada mula arranca con lo que ya hace según las parties y podés cambiar la dificultad, el tamaño de la party o sumar otros bosses. El cristal se reparte en partes iguales; Limbo, Malefic, Adversary y Baldrix van como máximo en trío.</p>
+    <p class="desc">A la izquierda, el resumen de mesos del jugador; toca una mula para ver su detalle. Cada mula arranca con lo que ya hace según las parties y puedes cambiar la dificultad, el tamaño de la party o sumar otros bosses. El cristal se reparte en partes iguales; Limbo, Malefic, Adversary y Baldrix van como máximo en trío.</p>
     <div class="mesos-layout">
     <aside class="mesos-dash" id="mesos-dash" aria-label="Resumen de mesos del jugador"></aside>
     <div class="mesos-detail">
     <div class="mesos-controls">
       <label>Jugador <select id="mesos-person"></select></label>
       <label>Mula <select id="mesos-char"></select></label>
-      <button type="button" id="mesos-restore" title="Descarta los cambios de esta mula y vuelve a lo que dicen las parties">↺ Volver a las parties</button>
+      <button type="button" id="mesos-restore" title="Borra lo guardado de esta mula y vuelve a lo que dicen las parties">↺ Volver a las parties</button>
+      <button type="button" id="mesos-all" title="Marca todos los bosses de esta mula">＋ Marcar todos</button>
+      <span class="mesos-pending">
+        <button type="button" id="mesos-discard" hidden>Descartar</button>
+        <button type="button" id="mesos-save" hidden>✓ Guardar cambios</button>
+      </span>
     </div>
     <div class="table-wrap">
       <table class="mesos-table">
@@ -1762,21 +2197,40 @@
     </div>
   </section>
 
+  <!-- MESITOS: histórico semanal de lo ganado -->
+  <section id="mesitos" class="view">
+    <h2>Mesitos <span class="tag">Histórico semanal</span></h2>
+    <p class="desc">Lo que vas ganando semana a semana, calculado con las runs que tildas en Mis runs. Se guarda en tu navegador; toca una semana para ver su detalle.</p>
+    <div class="mesos-layout">
+      <aside class="mesos-dash" id="mesitos-dash" aria-label="Resumen de mesos ganados"></aside>
+      <div class="mesos-detail">
+        <div class="runs-progress" id="mesitos-head"></div>
+        <div class="table-wrap">
+          <table class="mesos-table">
+            <thead><tr><th>Boss</th><th>Mula</th><th>Dificultad</th><th>Party</th><th class="num">Ganado</th></tr></thead>
+            <tbody id="mesitos-body"></tbody>
+            <tfoot><tr><td colspan="4">Total de la semana</td><td class="num" id="mesitos-total"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- DIARIO DE PITCHES: lo que va cayendo cada semana -->
   <section id="diario" class="view">
     <h2>Diario de pitches <span class="tag">Drops por semana</span></h2>
-    <p class="desc">Anotá lo que te cae cada semana: boss, qué cayó y a qué mula. Queda guardado por semana (solo en tu navegador) para ver el historial.</p>
+    <p class="desc">Anota lo que te cae cada semana: boss, qué cayó y a qué mula. Queda guardado por semana (solo en tu navegador) para ver el historial.</p>
     <form class="drop-form" id="drop-form" autocomplete="off">
       <label><span class="dash-label">Fecha</span><input type="date" id="drop-date" required></label>
-      <label><span class="dash-label">Boss</span><select id="drop-boss"></select></label>
-      <label><span class="dash-label">Qué cayó</span><input type="text" id="drop-item" list="drop-items" maxlength="40" placeholder="Ej: Black Heart" required></label>
-      <datalist id="drop-items">
-        <option value="Black Heart"><option value="Berserked"><option value="Magic Eyepatch"><option value="Dreamy Belt">
-        <option value="Cursed Spellbook"><option value="Source of Suffering"><option value="Genesis Badge">
-        <option value="Commanding Force Earring"><option value="Endless Terror"><option value="Mitra's Rage">
-        <option value="Anillo de Limbo"><option value="Anillo de Malefic"><option value="Medalla"><option value="Hammer">
-        <option value="Emblema"><option value="Grindstone"><option value="Vestigio">
-      </datalist>
+      <div class="drop-pick">
+        <span class="dash-label">Boss</span>
+        <select id="drop-boss" hidden aria-hidden="true" tabindex="-1"></select>
+        <div class="boss-pick" id="boss-pick">
+          <button type="button" class="boss-pick-btn" id="boss-pick-btn" aria-haspopup="listbox" aria-expanded="false"></button>
+          <div class="boss-pick-menu" id="boss-pick-menu" role="listbox" aria-label="Boss" hidden></div>
+        </div>
+      </div>
+      <div class="drop-pick"><span class="dash-label">Qué cayó</span><div class="drop-items" id="drop-items" role="group" aria-label="Qué cayó"></div></div>
       <label><span class="dash-label">Mula</span><select id="drop-char"></select></label>
       <label class="grow"><span class="dash-label">Nota</span><input type="text" id="drop-note" maxlength="80" placeholder="Opcional"></label>
       <button type="submit">＋ Anotar</button>
@@ -1793,7 +2247,7 @@
   <!-- MIS RUNS: HORARIOS + CHECKLIST -->
   <section id="horarios" class="view">
     <h2>Mis runs <span class="tag">Horarios y checklist</span></h2>
-    <p class="desc">Todas tus runs de la semana, una por mula y boss según las parties. Marcá el día y la hora para agendarla y tildala cuando la hagas; los tildes se limpian solos con el reset del miércoles.</p>
+    <p class="desc">Todas tus runs de la semana, una por mula y boss según las parties. Marca el día y la hora para agendarla y tíldala cuando la hagas; los tildes se limpian solos con el reset del miércoles.</p>
     <div class="runs-progress" id="runs-progress"></div>
     <div class="table-wrap">
       <table class="runs-table">
@@ -1816,11 +2270,42 @@
 </div>
 </div>
 
+<div class="chat-fab" id="chat-fab">
+  <button type="button" class="chat-mini-btn" id="chat-mini" aria-label="Minimizar el asistente" title="Minimizar">›</button>
+  <button type="button" class="chat-toggle" id="chat-toggle" aria-expanded="false" aria-controls="chat" aria-label="Abrir el asistente" title="Asistente"><img src="chat-icon.png" alt=""></button>
+</div>
+
+<div class="chat" id="chat" hidden aria-label="Asistente">
+  <div class="chat-head">
+    <img class="chat-avatar" src="chat-icon.png" alt="">
+    <div><strong>Asistente</strong><small>Respuestas automáticas</small></div>
+    <button type="button" id="chat-close" aria-label="Cerrar el chat">✕</button>
+  </div>
+  <div class="chat-log" id="chat-log" aria-live="polite"></div>
+  <div class="chat-chips" id="chat-chips"></div>
+  <form class="chat-form" id="chat-form" autocomplete="off">
+    <input type="text" id="chat-input" maxlength="140" placeholder="Ej: completa al battle mage" aria-label="Mensaje">
+    <button type="submit" aria-label="Enviar">➤</button>
+  </form>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<div class="confirm-gate" id="confirm-gate" hidden>
+  <div class="confirm-dialog" role="alertdialog" aria-modal="true" aria-describedby="confirm-msg">
+    <p id="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button type="button" id="confirm-cancel">Cancelar</button>
+      <button type="button" class="confirm-ok" id="confirm-ok">Sí</button>
+    </div>
+  </div>
+</div>
+
 <div class="viewer-gate" id="viewer-gate" hidden>
   <div class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
     <button type="button" class="viewer-close" id="viewer-close" aria-label="Cerrar">✕</button>
     <h2 id="viewer-title">Iniciar sesión</h2>
-    <p>Entrá con tu usuario para ver lo tuyo: runs, mulas, notas y mesos se guardan por persona en este navegador.</p>
+    <p>Entra con tu usuario para ver lo tuyo: runs, mulas, notas y mesos se guardan por persona en este navegador.</p>
     <form class="login-form" id="login-form" autocomplete="off">
       <label>Usuario <input type="text" id="login-user" maxlength="30" autocapitalize="none" spellcheck="false" required></label>
       <label>Contraseña <input type="password" id="login-pass" maxlength="60" required></label>
@@ -1863,15 +2348,99 @@
     MY_CHARS = JSON.parse(localStorage.getItem(MY_CHARS_KEY) || "[]")
       .filter(c => typeof c === "string" && c.trim() && !c.includes(","));
   } catch (e) { MY_CHARS = []; }
+  // Mulas del roster base que quien está viendo quitó de lo suyo: no se borran
+  // de las parties (los demás las siguen viendo), solo dejan de aparecerle en
+  // filtros, mesos y runs. Se pueden restaurar desde el Roster.
+  const HIDDEN_KEY = PREFIX + "hidden-chars";
+  let HIDDEN_CHARS = [];
+  try {
+    HIDDEN_CHARS = JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]").filter(c => typeof c === "string");
+  } catch (e) { HIDDEN_CHARS = []; }
   const BASE_CLASSES = {};
   ROSTER.forEach(p => { BASE_CLASSES[p.name] = p.classes.split(",").map(c => c.trim()); });
   if (VIEWER) {
     const me = ROSTER.find(p => p.name === VIEWER);
     MY_CHARS = MY_CHARS.filter(c => !BASE_CLASSES[VIEWER].some(b => b.toLowerCase() === c.toLowerCase()));
-    if (MY_CHARS.length) me.classes += ", " + MY_CHARS.join(", ");
+    HIDDEN_CHARS = HIDDEN_CHARS.filter(c => BASE_CLASSES[VIEWER].includes(c));
+    me.classes = [...BASE_CLASSES[VIEWER].filter(c => !HIDDEN_CHARS.includes(c)), ...MY_CHARS].join(", ");
   }
-  function saveMyChars(list) {
+  function saveHiddenChars(list, flash) {
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(list)); } catch (e) {}
+    if (flash) flashAfterReload(flash);
+    location.reload();
+  }
+  // --- Avisos: toast propio y confirmación propia (no los del navegador) ---
+  // toast("texto", { type: "ok" | "error" | "info", action: { label, run } })
+  function toast(message, opts = {}) {
+    const wrap = document.getElementById("toasts");
+    const el = document.createElement("div");
+    const type = opts.type || "ok";
+    el.className = "toast " + type;
+    const ico = document.createElement("span");
+    ico.className = "toast-ico";
+    ico.textContent = type === "error" ? "!" : type === "info" ? "i" : "✓";
+    const msg = document.createElement("span");
+    msg.className = "toast-msg";
+    msg.textContent = message;
+    el.append(ico, msg);
+    const close = () => {
+      if (el.classList.contains("out")) return;
+      el.classList.add("out");
+      setTimeout(() => el.remove(), 200);
+    };
+    if (opts.action) {
+      const act = document.createElement("button");
+      act.type = "button";
+      act.className = "toast-action";
+      act.textContent = opts.action.label;
+      act.addEventListener("click", () => { opts.action.run(); close(); });
+      el.appendChild(act);
+    }
+    const x = document.createElement("button");
+    x.type = "button";
+    x.textContent = "✕";
+    x.setAttribute("aria-label", "Cerrar aviso");
+    x.addEventListener("click", close);
+    el.appendChild(x);
+    wrap.appendChild(el);
+    while (wrap.children.length > 4) wrap.firstElementChild.remove();
+    setTimeout(close, opts.action ? 6000 : 3500);
+  }
+  // Aviso que tiene que sobrevivir a una recarga de la página (login, sumar mula…).
+  function flashAfterReload(message, type) {
+    try { sessionStorage.setItem("bp_flash", JSON.stringify({ message, type })); } catch (e) {}
+  }
+  function askConfirm(message, okLabel = "Sí, borrar") {
+    const gateEl = document.getElementById("confirm-gate");
+    const ok = document.getElementById("confirm-ok");
+    const cancel = document.getElementById("confirm-cancel");
+    document.getElementById("confirm-msg").textContent = message;
+    ok.textContent = okLabel;
+    gateEl.hidden = false;
+    cancel.focus();
+    return new Promise(resolve => {
+      const finish = value => {
+        gateEl.hidden = true;
+        ok.removeEventListener("click", onOk);
+        cancel.removeEventListener("click", onCancel);
+        gateEl.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKey);
+        resolve(value);
+      };
+      const onOk = () => finish(true);
+      const onCancel = () => finish(false);
+      const onBackdrop = e => { if (e.target === gateEl) finish(false); };
+      const onKey = e => { if (e.key === "Escape") finish(false); };
+      ok.addEventListener("click", onOk);
+      cancel.addEventListener("click", onCancel);
+      gateEl.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  function saveMyChars(list, flash) {
     try { localStorage.setItem(MY_CHARS_KEY, JSON.stringify(list)); } catch (e) {}
+    if (flash) flashAfterReload(flash);
     location.reload();
   }
 
@@ -1887,13 +2456,15 @@
       if (!name) return;
       const all = getPersonClassList(VIEWER);
       if (all.some(c => c.toLowerCase() === name.toLowerCase())) {
-        input.setCustomValidity("Ya tenés esa mula");
-        input.reportValidity();
+        toast(`Ya tienes una mula ${name}`, { type: "error" });
+        input.select();
         return;
       }
-      saveMyChars([...MY_CHARS, name]);
+      // Si es una del roster que había quitado, se restaura en vez de duplicarla.
+      const wasHidden = HIDDEN_CHARS.find(h => h.toLowerCase() === name.toLowerCase());
+      if (wasHidden) { saveHiddenChars(HIDDEN_CHARS.filter(h => h !== wasHidden), `${wasHidden} restaurada`); return; }
+      saveMyChars([...MY_CHARS, name], `${name} agregada a tus mulas`);
     });
-    document.getElementById("add-char-name").addEventListener("input", e => e.target.setCustomValidity(""));
   }
 
   // --- Persistence: generic contenteditable ---
@@ -2229,7 +2800,7 @@
           line.querySelector(".party-members").innerHTML = line.dataset.full; // restaurar por si quedó recortada
         });
       });
-      summary.textContent = "Elegí tu nombre y, si tenés más de un personaje, cuál usás.";
+      summary.textContent = "Elige tu nombre y, si tienes más de un personaje, cuál usas.";
       return;
     }
 
@@ -2251,9 +2822,10 @@
         // Con pj puntual: exigimos "nombre (clase" pegado, para no confundir
         // a esa persona con otra que comparta línea y clase (ej. "Sebas (Bucanero),
         // Edu (Bishop)" no debe contar como "Sebas Bishop").
-        const isLineMatch = cls
+        const hidden = person === VIEWER && HIDDEN_CHARS.some(h => text.includes(`${p} (${h.toLowerCase()}`));
+        const isLineMatch = !hidden && (cls
           ? (text.includes(`${p} (${cls.toLowerCase()}`) || text.includes(`${p}(${cls.toLowerCase()}`))
-          : text.includes(p);
+          : text.includes(p));
         line.classList.toggle("line-match", isLineMatch);
         line.classList.toggle("line-hide", !isLineMatch); // solo se ve la línea que matchea
         line.querySelector(".party-members").innerHTML = (isLineMatch && stripCls) ? stripOwnMention(fullHtml, person, stripCls) : fullHtml;
@@ -2286,9 +2858,12 @@
   refreshUndefined();
 
   document.getElementById("reset").addEventListener("click", () => {
-    if (!confirm("¿Restablecer todos los datos a los valores por defecto? Esto borra tus cambios guardados.")) return;
-    Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k));
-    location.reload();
+    askConfirm("¿Restablecer todos tus datos a los valores por defecto? Se borran tus cambios guardados en este navegador.", "Sí, restablecer").then(ok => {
+      if (!ok) return;
+      Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k));
+      flashAfterReload("Datos restablecidos", "info");
+      location.reload();
+    });
   });
 
   // --- Switch de tema oscuro/claro (manual, no sigue el tema del SO) ---
@@ -2374,15 +2949,16 @@
     { id: "baldrix",   name: "Baldrix",           icon: "icon-baldrix.png",   max: 3, def: "Normal",  prices: { Normal: 2800000000, Hard: 4200000000 } },
     // Bosses que no están en las cards: arrancan apagados, se pueden sumar a mano.
     // Black Mage es mensual (reset el 1° de cada mes): va aparte del total semanal.
-    { id: "blackmage", name: "Black Mage",           max: 6, extra: true, monthly: true, def: "Hard", prices: { Hard: 4500000000, Extreme: 18000000000 } },
-    { id: "jupiter",   name: "Jupiter",              max: 6, extra: true, def: "Normal",  prices: { Normal: 2965000000, Hard: 5953000000 } },
-    { id: "lotus",     name: "Lotus",                max: 6, extra: true, def: "Hard",    prices: { Hard: 444675000, Extreme: 1397500000 } },
-    { id: "verus",     name: "Verus Hilla",          max: 6, extra: true, def: "Hard",    prices: { Normal: 581880000, Hard: 762105000 } },
-    { id: "darknell",  name: "Darknell",             max: 6, extra: true, def: "Hard",    prices: { Hard: 667920000 } },
-    { id: "will",      name: "Will",                 max: 6, extra: true, def: "Hard",    prices: { Hard: 621810000 } },
-    { id: "slime",     name: "Guardian Angel Slime", max: 6, extra: true, def: "Chaos",   prices: { Chaos: 600578125 } },
-    { id: "gloom",     name: "Gloom",                max: 6, extra: true, def: "Chaos",   prices: { Chaos: 563945000 } },
-    { id: "lucid",     name: "Lucid",                max: 6, extra: true, def: "Hard",    prices: { Hard: 504000000 } },
+    { id: "blackmage", name: "Black Mage",           icon: "icon-blackmage.png", max: 6, extra: true, monthly: true, def: "Hard", prices: { Hard: 4500000000, Extreme: 18000000000 } },
+    { id: "jupiter",   name: "Jupiter",              icon: "icon-jupiter.png", max: 6, extra: true, def: "Normal",  prices: { Normal: 2965000000, Hard: 5953000000 } },
+    { id: "lotus",     name: "Lotus",                icon: "icon-lotus.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 444675000, Extreme: 1397500000 } },
+    { id: "verus",     name: "Verus Hilla",          icon: "icon-verus.png", max: 6, extra: true, def: "Hard",    prices: { Normal: 581880000, Hard: 762105000 } },
+    { id: "darknell",  name: "Darknell",             icon: "icon-darknell.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 667920000 } },
+    { id: "will",      name: "Will",                 icon: "icon-will.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 621810000 } },
+    { id: "slime",     name: "Guardian Angel Slime", icon: "icon-slime.png", max: 6, extra: true, def: "Chaos",   prices: { Chaos: 600578125 } },
+    { id: "gloom",     name: "Gloom",                icon: "icon-gloom.png", max: 6, extra: true, def: "Chaos",   prices: { Chaos: 563945000 } },
+    { id: "lucid",     name: "Lucid",                icon: "icon-lucid.png", max: 6, extra: true, def: "Hard",    prices: { Hard: 504000000 } },
+    { id: "damien",    name: "Damien",               icon: "icon-damien.png", max: 6, extra: true, def: "Hard",    prices: { Normal: 169000000, Hard: 421875000 } },
   ];
   const SIZE_NAMES = { 1: "Solo", 2: "Dúo", 3: "Trío", 4: "Cuarteto", 5: "Party de 5", 6: "Party de 6" };
   const BADGE_TO_DIFF = { Xtreme: "Extreme", Extreme: "Extreme", Chaos: "Chaos", Hard: "Hard", Normal: "Normal", Easy: "Easy" };
@@ -2468,11 +3044,28 @@
     if (preferred && classes.includes(preferred)) mesosCharSel.value = preferred;
   }
 
+  // Los cambios en la tabla no se guardan solos: quedan en un borrador hasta
+  // que se toque "Guardar cambios" (o se descarten).
+  let mesosDraft = null; // { person, cls, state }
+  const mesosSaveBtn = document.getElementById("mesos-save");
+  const mesosDiscardBtn = document.getElementById("mesos-discard");
+  function touchMesos(person, cls, state) {
+    mesosDraft = { person, cls, state };
+    renderMesos();
+  }
+
   function renderMesos() {
+    // Con cambios sin guardar no se cambia de mula: primero guardar o descartar.
+    if (mesosDraft && (mesosDraft.person !== mesosPersonSel.value || mesosDraft.cls !== mesosCharSel.value)) {
+      mesosPersonSel.value = mesosDraft.person;
+      fillMesosChars(mesosDraft.cls);
+      toast(`Guarda o descarta los cambios de ${mesosDraft.cls} antes de cambiar de mula`, { type: "error" });
+    }
     const person = mesosPersonSel.value;
     const cls = mesosCharSel.value;
     if (!person || !cls) return;
-    const state = loadMesosState(person, cls);
+    const state = mesosDraft ? mesosDraft.state : loadMesosState(person, cls);
+    mesosSaveBtn.hidden = mesosDiscardBtn.hidden = !mesosDraft;
     mesosBody.innerHTML = "";
 
     let extraHeader = false;
@@ -2493,7 +3086,7 @@
       chk.type = "checkbox";
       chk.checked = s.on;
       chk.setAttribute("aria-label", `¿${cls} hace ${b.name}?`);
-      chk.addEventListener("change", () => { s.on = chk.checked; saveMesosState(person, cls, state); renderMesos(); });
+      chk.addEventListener("change", () => { s.on = chk.checked; touchMesos(person, cls, state); });
       tdOn.appendChild(chk);
 
       const tdName = document.createElement("td");
@@ -2509,14 +3102,14 @@
       const diffSel = document.createElement("select");
       Object.keys(b.prices).forEach(d => diffSel.add(new Option(d, d)));
       diffSel.value = s.diff;
-      diffSel.addEventListener("change", () => { s.diff = diffSel.value; s.on = true; saveMesosState(person, cls, state); renderMesos(); });
+      diffSel.addEventListener("change", () => { s.diff = diffSel.value; s.on = true; touchMesos(person, cls, state); });
       tdDiff.appendChild(diffSel);
 
       const tdSize = document.createElement("td");
       const sizeSel = document.createElement("select");
       for (let n = 1; n <= b.max; n++) sizeSel.add(new Option(SIZE_NAMES[n], n));
       sizeSel.value = s.size;
-      sizeSel.addEventListener("change", () => { s.size = +sizeSel.value; s.on = true; saveMesosState(person, cls, state); renderMesos(); });
+      sizeSel.addEventListener("change", () => { s.size = +sizeSel.value; s.on = true; touchMesos(person, cls, state); });
       tdSize.appendChild(sizeSel);
 
       const price = b.prices[s.diff];
@@ -2625,8 +3218,37 @@
   mesosCharSel.addEventListener("change", renderMesos);
   document.getElementById("mesos-restore").addEventListener("click", () => {
     try { localStorage.removeItem(mesosKey(mesosPersonSel.value, mesosCharSel.value)); } catch (e) {}
+    mesosDraft = null;
     renderMesos();
+    toast(`${mesosCharSel.value} volvió a lo que dicen las parties`, { type: "info" });
   });
+  // Marca todos los bosses de la mula (queda como cambio sin guardar).
+  document.getElementById("mesos-all").addEventListener("click", () => {
+    const person = mesosPersonSel.value;
+    const cls = mesosCharSel.value;
+    if (!person || !cls) return;
+    const state = mesosDraft ? mesosDraft.state : loadMesosState(person, cls);
+    BOSS_MESOS.forEach(b => { state[b.id].on = true; });
+    touchMesos(person, cls, state);
+  });
+  mesosSaveBtn.addEventListener("click", () => {
+    if (!mesosDraft) return;
+    const { person, cls, state } = mesosDraft;
+    saveMesosState(person, cls, state);
+    mesosDraft = null;
+    renderMesos();
+    renderRuns(); // lo marcado a mano también suma (o saca) runs
+    toast(`Cambios de ${cls} guardados`);
+  });
+  mesosDiscardBtn.addEventListener("click", () => {
+    if (!mesosDraft) return;
+    const cls = mesosDraft.cls;
+    mesosDraft = null;
+    renderMesos();
+    toast(`Cambios de ${cls} descartados`, { type: "info" });
+  });
+  // Aviso del navegador si cierran o recargan con cambios sin guardar.
+  window.addEventListener("beforeunload", e => { if (mesosDraft) e.preventDefault(); });
 
   // Arranca con la persona/pj elegidos en "¿Quién sos?", si hay.
   const startPerson = personChipWrap.dataset.selected;
@@ -2659,6 +3281,7 @@
         const m = text.match(mine);
         if (!m) return;
         const cls = m[1].trim();
+        if (person === VIEWER && HIDDEN_CHARS.includes(cls)) return; // mula que quitó de lo suyo
         const lineBadge = (full.match(/class="diff-badge-inline"[^>]*alt="(\w+)"/) || [])[1];
         const partners = [...text.matchAll(/([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s*\(([^)]+)\)/g)]
           .filter(x => x[1].toLowerCase() !== person.toLowerCase())
@@ -2714,15 +3337,43 @@
       else localStorage.removeItem(runSchedKey(id));
     } catch (e) {}
   }
-  function isRunDone(id) {
-    try { return localStorage.getItem(runDoneKey(id)) === "1"; } catch (e) { return false; }
+  // El tilde guarda en qué semana de bosses se hizo la run (antes era "1"):
+  // hace falta para Black Mage, que dura tildado todo el mes pero se cobra
+  // una sola vez, en la semana en que se marcó.
+  function runDoneWeek(id) {
+    try { return localStorage.getItem(runDoneKey(id)); } catch (e) { return null; }
   }
+  const isRunDone = id => runDoneWeek(id) !== null;
   function setRunDone(id, done) {
     try {
-      if (done) localStorage.setItem(runDoneKey(id), "1");
+      if (done) localStorage.setItem(runDoneKey(id), WEEK_START);
       else localStorage.removeItem(runDoneKey(id));
     } catch (e) {}
   }
+
+  // --- Mesitos: lo ganado semana a semana ---
+  // La semana en curso se recalcula siempre desde las runs tildadas; cuando
+  // cambia la semana, lo que quedó guardado de las anteriores ya no se toca.
+  const EARN_KEY = PREFIX + "earnings";
+  let earnings = {};
+  try { earnings = JSON.parse(localStorage.getItem(EARN_KEY) || "{}") || {}; } catch (e) { earnings = {}; }
+  // Lo que deja una run: el cristal de esa dificultad repartido en la party.
+  function runMesos(r) {
+    const s = loadMesosState(VIEWER, r.cls)[r.boss.id];
+    return { diff: s.diff, size: s.size, mesos: r.boss.prices[s.diff] / s.size };
+  }
+  function syncEarnings(runs) {
+    const items = runs
+      .filter(r => {
+        const w = runDoneWeek(r.id);
+        return w !== null && (!r.boss.monthly || w === WEEK_START);
+      })
+      .map(r => ({ boss: r.boss.id, cls: r.cls, ...runMesos(r) }));
+    if (items.length) earnings[WEEK_START] = { items };
+    else delete earnings[WEEK_START];
+    try { localStorage.setItem(EARN_KEY, JSON.stringify(earnings)); } catch (e) {}
+  }
+  const weekTotal = w => (earnings[w]?.items || []).reduce((a, i) => a + i.mesos, 0);
   // Los tildes de semanas (o meses) anteriores ya no sirven.
   try {
     Object.keys(localStorage)
@@ -2756,21 +3407,25 @@
       td.colSpan = 6;
       td.className = "runs-empty";
       if (!VIEWER) {
-        td.append("Elegí quién sos para ver tus runs.");
+        td.append("Elige quién eres para ver tus runs.");
         const b = document.createElement("button");
         b.type = "button";
-        b.textContent = "¿Quién sos?";
+        b.textContent = "¿Quién eres?";
         b.addEventListener("click", openGate);
         td.appendChild(b);
       } else {
-        td.textContent = `${VIEWER} no está en ninguna party por ahora. Podés sumar bosses a mano en Info de mulas.`;
+        td.textContent = `${VIEWER} no está en ninguna party por ahora. Puedes sumar bosses a mano en Info de mulas.`;
       }
       tr.appendChild(td);
       runsBody.appendChild(tr);
       renderCardDays([]);
       setNavBadge(0);
+      renderMesitos([]);
       return;
     }
+
+    syncEarnings(runs);
+    renderMesitos(runs);
 
     // Pestañas: las runs en party y las que se hacen solo van por separado.
     // Filtro por mula (o todas): achica la lista a las runs de un solo personaje.
@@ -2797,6 +3452,31 @@
     mules.appendChild(muleSel);
     runsTable.classList.toggle("one-mule", !!runsMule);
 
+    // Con una mula elegida: tildar (o destildar) todas sus runs de una, party y solo.
+    let completeBtn = null;
+    const muleRuns = runsMule ? runs.filter(r => r.cls === runsMule) : [];
+    if (muleRuns.length) {
+      const allDone = muleRuns.every(r => isRunDone(r.id));
+      const mule = runsMule;
+      completeBtn = document.createElement("button");
+      completeBtn.type = "button";
+      completeBtn.className = "runs-complete" + (allDone ? " undo" : "");
+      completeBtn.textContent = allDone ? `↺ Desmarcar ${mule}` : `✓ Completar ${mule}`;
+      completeBtn.title = allDone
+        ? `Destilda las ${muleRuns.length} runs de ${mule}`
+        : `Tilda como hechas las ${muleRuns.length} runs de ${mule} (party y solo)`;
+      completeBtn.addEventListener("click", () => {
+        const changed = muleRuns.filter(r => isRunDone(r.id) === allDone);
+        changed.forEach(r => setRunDone(r.id, !allDone));
+        renderRuns();
+        const n = `${changed.length} run${changed.length === 1 ? "" : "s"}`;
+        toast(allDone ? `${mule}: ${n} destildada${changed.length === 1 ? "" : "s"}` : `${mule} completa: ${n} hecha${changed.length === 1 ? "" : "s"}`, {
+          type: allDone ? "info" : "ok",
+          action: { label: "Deshacer", run: () => { changed.forEach(r => setRunDone(r.id, allDone)); renderRuns(); } },
+        });
+      });
+    }
+
     const counts = { party: shown.filter(r => !isSoloRun(r)), solo: shown.filter(isSoloRun) };
     const tabRuns = counts[runsTab];
     const tabs = document.createElement("div");
@@ -2820,6 +3500,7 @@
       tabs.appendChild(b);
     });
     runsProgress.append(tabs, mules);
+    if (completeBtn) runsProgress.appendChild(completeBtn);
     runsTable.classList.toggle("solo-tab", runsTab === "solo");
 
     if (!tabRuns.length) {
@@ -2827,9 +3508,9 @@
       const td = document.createElement("td");
       td.colSpan = 6;
       td.className = "runs-empty";
-      const who = runsMule ? `${runsMule} no tiene` : "No tenés";
+      const who = runsMule ? `${runsMule} no tiene` : "No tienes";
       td.textContent = runsTab === "solo"
-        ? `${who} runs en solo. Podés sumar bosses a mano en Info de mulas.`
+        ? `${who} runs en solo. Puedes sumar bosses a mano en Info de mulas.`
         : `${who} runs en party por ahora.`;
       tr.appendChild(td);
       runsBody.appendChild(tr);
@@ -2905,7 +3586,7 @@
       time.type = "time";
       time.value = sched.time || "";
       time.disabled = !sched.day;
-      time.title = sched.day ? "Hora de la run" : "Primero elegí el día";
+      time.title = sched.day ? "Hora de la run" : "Primero elige el día";
       time.addEventListener("change", () => {
         setRunSched(r.id, { day: sched.day, time: time.value });
         renderCardDays(runs);
@@ -2944,7 +3625,7 @@
         b.textContent = (allDone ? "✓ " : "") + DAY_LABELS[d];
         b.title = here.length
           ? here.map(r => `${r.cls}${getRunSched(r.id).time ? " · " + getRunSched(r.id).time : ""}${isRunDone(r.id) ? " (hecha)" : ""}`).join("\n")
-          : (mine.length ? "Agendá esta run en Mis runs" : "No tenés runs en este boss");
+          : (mine.length ? "Agenda esta run en Mis runs" : "No tienes runs en este boss");
         b.addEventListener("click", () => {
           const target = mine.find(r => getRunSched(r.id).day === d) || mine[0];
           if (!target) return;
@@ -2976,10 +3657,30 @@
   const loginPass = document.getElementById("login-pass");
   const loginError = document.getElementById("login-error");
 
-  // Mini login: el usuario es el nombre del roster (sin importar mayúsculas)
-  // y la contraseña es ese mismo nombre tal cual está escrito ("Choscar").
-  // Es solo para que cada uno entre a lo suyo: todo vive en el navegador,
-  // no es seguridad de verdad.
+  // Mini login: el usuario es el nombre del roster y cada persona tiene su
+  // contraseña (ninguna distingue mayúsculas). Aquí solo se guarda un hash de
+  // cada una, para que no queden a la vista en el código. Es solo para que
+  // cada uno entre a lo suyo: todo vive en el navegador, no es seguridad de
+  // verdad (un hash de una clave corta se puede adivinar probando).
+  const PASS_HASHES = {
+    Franklin: "1vyprj87p8j", Sebas: "1bsazpta29m", Choscar: "128idsy9x2y", Edu: "7ana3g61xc",
+    Tacos: "7toq665f58", Rikar: "9fgb1nmmig", Mechitax: "hah10g4txt", Chepas: "ivrtsejgv8",
+    Sushimitzu: "7mioqx5pe4", Danna: "malx08229u", Crunchyroll: "3ukfm3ifwv",
+  };
+  // cyrb53: hash corto y rápido de un texto (no criptográfico).
+  function passHash(str) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0, ch; i < str.length; i++) {
+      ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+  const passOk = (person, pass) =>
+    passHash(person.name.toLowerCase() + ":" + pass.trim().toLowerCase()) === PASS_HASHES[person.name];
   function openGate() {
     loginForm.reset();
     loginError.hidden = true;
@@ -2991,8 +3692,9 @@
     e.preventDefault();
     const user = loginUser.value.trim().toLowerCase();
     const person = ROSTER.find(p => p.name.toLowerCase() === user);
-    if (!person || loginPass.value !== person.name) {
+    if (!person || !passOk(person, loginPass.value)) {
       loginError.hidden = false;
+      toast("Usuario o contraseña incorrectos", { type: "error" });
       loginPass.value = "";
       loginPass.focus();
       return;
@@ -3012,11 +3714,12 @@
       if (!hasOwn) {
         Object.keys(localStorage)
           .filter(k => k.startsWith("bp_") && !k.startsWith("bp_u-") &&
-                       ![VIEWER_KEY, "bp_theme", "bp_music", "bp_storage_version", "bp_selected-person", "bp_selected-class"].includes(k))
+                       ![VIEWER_KEY, "bp_theme", "bp_music", "bp_chat_mini", "bp_storage_version", "bp_selected-person", "bp_selected-class"].includes(k))
           .forEach(k => localStorage.setItem(np + k.slice(3), localStorage.getItem(k)));
       }
       localStorage.setItem(VIEWER_KEY, name);
     } catch (e) {}
+    flashAfterReload(`¡Hola, ${name}!`);
     location.reload();
   }
   gateClose.addEventListener("click", closeGate);
@@ -3028,6 +3731,7 @@
   // Cerrar sesión: lo guardado de la persona queda; solo se vuelve al login.
   document.getElementById("logout").addEventListener("click", () => {
     try { localStorage.removeItem(VIEWER_KEY); } catch (e) {}
+    flashAfterReload("Sesión cerrada", "info");
     location.reload();
   });
 
@@ -3042,8 +3746,122 @@
   }
 
   // Lo que se marque a mano en "Mesos por mula" también suma (o saca) runs.
-  mesosBody.addEventListener("change", () => renderRuns());
   document.getElementById("mesos-restore").addEventListener("click", () => renderRuns());
+
+  // --- Mesitos: mini dashboard del histórico + detalle de la semana elegida ---
+  const mesitosDash = document.getElementById("mesitos-dash");
+  const mesitosHead = document.getElementById("mesitos-head");
+  const mesitosBody = document.getElementById("mesitos-body");
+  const mesitosTotalEl = document.getElementById("mesitos-total");
+  let mesitosWeek = WEEK_START; // semana cuyo detalle se está mirando
+  let lastRuns = [];
+
+  function renderMesitos(runs) {
+    if (runs) lastRuns = runs;
+    // Siempre aparece la semana en curso, aunque todavía no haya nada tildado.
+    const weeks = [...new Set([WEEK_START, ...Object.keys(earnings)])].sort().reverse();
+    if (!weeks.includes(mesitosWeek)) mesitosWeek = WEEK_START;
+    const totals = weeks.map(w => ({ week: w, total: weekTotal(w), count: (earnings[w]?.items || []).length }));
+    const withData = totals.filter(t => t.count);
+    const sum = withData.reduce((a, t) => a + t.total, 0);
+    const best = withData.reduce((a, t) => (t.total > (a ? a.total : 0) ? t : a), null);
+    const now = weekTotal(WEEK_START);
+    const possible = lastRuns.filter(r => !r.boss.monthly).reduce((a, r) => a + runMesos(r).mesos, 0);
+    const maxTotal = Math.max(...totals.map(t => t.total), 1);
+
+    mesitosDash.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "dash-head";
+    const who = document.createElement("strong");
+    who.textContent = VIEWER || "";
+    const sub = document.createElement("span");
+    sub.className = "dash-label";
+    sub.textContent = "Mesos ganados";
+    head.append(who, sub);
+
+    const tiles = document.createElement("div");
+    tiles.className = "dash-tiles";
+    const tile = (label, value, small, hero) => {
+      const t = document.createElement("div");
+      t.className = "dash-tile" + (hero ? " hero" : "");
+      t.innerHTML = `<span class="dash-label"></span><span class="v"></span><span class="s"></span>`;
+      t.children[0].textContent = label;
+      t.children[1].textContent = value;
+      t.children[2].textContent = small;
+      t.title = `${label}: ${small}`;
+      tiles.appendChild(t);
+    };
+    tile("Esta semana", now ? fmtShort(now) : "0",
+      possible ? `de ${fmtShort(possible)} posibles · ${Math.min(100, Math.round((now / possible) * 100))}%` : "sin runs esta semana", true);
+    tile("Promedio semanal", withData.length ? fmtShort(sum / withData.length) : "—", `${withData.length} semana${withData.length === 1 ? "" : "s"} con runs`);
+    tile("Mejor semana", best ? fmtShort(best.total) : "—", best ? `mié ${shortDate(best.week)}` : "todavía ninguna");
+    tile("Total acumulado", sum ? fmtShort(sum) : "0", fmtMesos(sum) + " mesos");
+    tile("Runs cobradas", String(withData.reduce((a, t) => a + t.count, 0)), "en total");
+
+    const listLabel = document.createElement("span");
+    listLabel.className = "dash-label";
+    listLabel.textContent = "Mesos por semana";
+    const list = document.createElement("div");
+    list.className = "mule-list";
+    totals.forEach(t => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "mule-row" + (t.week === mesitosWeek ? " active" : "") + (t.total ? "" : " zero");
+      row.innerHTML = `<span class="mule-name"></span><span class="mule-val"></span><span class="mule-bar"><span></span></span>`;
+      row.children[0].textContent = `mié ${shortDate(t.week)}` + (t.week === WEEK_START ? " · en curso" : "");
+      row.children[1].textContent = t.total ? fmtShort(t.total) : "—";
+      row.querySelector(".mule-bar span").style.width = `${(t.total / maxTotal) * 100}%`;
+      row.title = `Semana del mié ${shortDate(t.week)}: ${fmtMesos(t.total)} mesos · ${t.count} run${t.count === 1 ? "" : "s"}`;
+      row.addEventListener("click", () => { mesitosWeek = t.week; renderMesitos(); });
+      list.appendChild(row);
+    });
+    mesitosDash.append(head, tiles, listLabel, list);
+
+    // Detalle de la semana elegida
+    const items = [...(earnings[mesitosWeek]?.items || [])].sort((a, b) => b.mesos - a.mesos);
+    mesitosHead.innerHTML = "";
+    const title = document.createElement("span");
+    title.innerHTML = `Semana del mié <strong></strong> · <strong></strong> runs cobradas`;
+    title.children[0].textContent = shortDate(mesitosWeek) + (mesitosWeek === WEEK_START ? " (en curso)" : "");
+    title.children[1].textContent = items.length;
+    mesitosHead.appendChild(title);
+
+    mesitosBody.innerHTML = "";
+    if (!items.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 5;
+      td.className = "runs-empty";
+      td.textContent = mesitosWeek === WEEK_START
+        ? "Todavía no tildaste ninguna run esta semana. Márcalas en Mis runs y se suman aquí."
+        : "Sin runs en esa semana.";
+      tr.appendChild(td);
+      mesitosBody.appendChild(tr);
+    }
+    items.forEach(i => {
+      const boss = BOSS_MESOS.find(b => b.id === i.boss);
+      const tr = document.createElement("tr");
+      const tdBoss = document.createElement("td");
+      const name = document.createElement("span");
+      name.className = "boss-name";
+      if (boss && boss.icon) { const img = document.createElement("img"); img.src = boss.icon; img.alt = ""; name.appendChild(img); }
+      name.append(boss ? boss.name : i.boss);
+      if (boss && boss.monthly) { const tag = document.createElement("span"); tag.className = "monthly-tag"; tag.textContent = "mensual"; name.appendChild(tag); }
+      tdBoss.appendChild(name);
+      const tdCls = document.createElement("td");
+      tdCls.textContent = i.cls;
+      const tdDiff = document.createElement("td");
+      tdDiff.textContent = i.diff;
+      const tdSize = document.createElement("td");
+      tdSize.textContent = SIZE_NAMES[i.size] || i.size;
+      const tdMesos = document.createElement("td");
+      tdMesos.className = "num share";
+      tdMesos.textContent = fmtMesos(i.mesos);
+      tr.append(tdBoss, tdCls, tdDiff, tdSize, tdMesos);
+      mesitosBody.appendChild(tr);
+    });
+    mesitosTotalEl.textContent = fmtMesos(weekTotal(mesitosWeek));
+  }
 
   // --- Diario de pitches: lo que le cae a quien está viendo, semana a semana ---
   // Cada anotación guarda la semana de bosses (WEEK_START) en la que se hizo,
@@ -3074,8 +3892,126 @@
   const dropDateInput = document.getElementById("drop-date");
   dropDateInput.value = dropDateInput.max = todayYmd();
 
-  BOSS_MESOS.forEach(b => dropBossSel.add(new Option(b.name, b.id)));
-  dropBossSel.add(new Option("Otro", "otro"));
+  // Qué puede caer de cada boss (con su miniatura en items/). El formulario
+  // solo deja elegir entre los items del boss seleccionado.
+  const DROP_ITEMS = [
+    { id: "grindstone-5",      name: "Grindstone Lv 5",          bosses: { kalos: "Normal, Chaos y Extreme", kaling: "Normal", malefic: "Normal", adversary: "Normal, Hard y Extreme" } },
+    { id: "grindstone-6",      name: "Grindstone Lv 6",          bosses: { limbo: "Hard", kaling: "Hard", malefic: "Hard", baldrix: "Normal y Hard" } },
+    { id: "caja-kalos",        name: "Cajita Eternal",           bosses: { kalos: "Chaos y Extreme" } },
+    { id: "caja-limbo",        name: "Cajita Eternal",           bosses: { limbo: "Hard" } },
+    { id: "caja-kaling",       name: "Cajita Eternal",           bosses: { kaling: "Hard" } },
+    { id: "caja-malefic",      name: "Cajita Eternal",           bosses: { malefic: "Hard" } },
+    { id: "caja-adversary",    name: "Cajita Eternal",           bosses: { adversary: "Hard y Extreme" } },
+    { id: "caja-baldrix",      name: "Cajita Eternal",           bosses: { baldrix: "Hard" } },
+    { id: "anillo-limbo",      name: "Anillo de Limbo",          bosses: { limbo: "Hard" } },
+    { id: "anillo-malefic",    name: "Anillo de Malefic",        bosses: { malefic: "Hard" } },
+    { id: "medalla-adversary", name: "Medalla de Adversary",     bosses: { adversary: "Hard y Extreme" } },
+    { id: "pendiente-baldrix", name: "Pendiente de Baldrix",     bosses: { baldrix: "Hard" } },
+    { id: "emblema-seren",     name: "Emblema de Seren",         bosses: { seren: "Hard y Extreme" } },
+    { id: "hammer",            name: "Hammer",                   bosses: { seren: "Extreme" } },
+    { id: "genesis-badge",     name: "Genesis Badge",            bosses: { blackmage: "Hard y Extreme" } },
+    { id: "berserked",         name: "Berserked",                bosses: { lotus: "Hard y Extreme" } },
+    { id: "black-heart",       name: "Black Heart",              bosses: { lotus: "Hard y Extreme" } },
+    { id: "total-control",     name: "Total Control",            bosses: { lotus: "Extreme" } },
+    { id: "sos",               name: "Source of Suffering",      bosses: { verus: "Hard" } },
+    { id: "commanding",        name: "Commanding Force Earring", bosses: { darknell: "Hard" } },
+    { id: "anillo-slime",      name: "Anillo de Slime",          bosses: { slime: "Normal y Chaos" } },
+    { id: "endless-terror",    name: "Endless Terror",           bosses: { gloom: "Hard" } },
+    { id: "dreamy-belt",       name: "Dreamy Belt",              bosses: { lucid: "Hard" } },
+    { id: "librito-will",      name: "Librito de Will",          bosses: { will: "Hard" } },
+    { id: "eyepatch",          name: "Magic Eyepatch",           bosses: { damien: "Hard" } },
+  ];
+  // Bosses del diario: los que tienen algún item, en el orden de BOSS_MESOS.
+  const dropBossName = id => (BOSS_MESOS.find(b => b.id === id) || {}).name || "Otro";
+  BOSS_MESOS.filter(b => DROP_ITEMS.some(i => b.id in i.bosses))
+    .forEach(b => dropBossSel.add(new Option(b.name, b.id)));
+  const dropItemsEl = document.getElementById("drop-items");
+  // Pueden caer varias cosas en la misma run: las miniaturas se prenden y
+  // apagan, y todas las elegidas van en una sola anotación.
+  let dropPicked = new Set();
+  function renderDropItems() {
+    const options = DROP_ITEMS.filter(i => dropBossSel.value in i.bosses);
+    dropPicked = new Set(options.filter(i => dropPicked.has(i.id)).map(i => i.id));
+    if (options.length === 1) dropPicked.add(options[0].id);
+    dropItemsEl.innerHTML = "";
+    options.forEach(i => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "drop-tile" + (dropPicked.has(i.id) ? " active" : "");
+      b.setAttribute("role", "checkbox");
+      b.setAttribute("aria-checked", String(dropPicked.has(i.id)));
+      const diff = i.bosses[dropBossSel.value];
+      b.title = i.name + (diff ? ` (${diff})` : "");
+      const img = document.createElement("img");
+      img.src = `items/${i.id}.png`;
+      img.alt = "";
+      const label = document.createElement("span");
+      label.textContent = i.name;
+      // La dificultad va a la vista: un mismo boss tira cosas distintas según cuál sea.
+      if (diff) { const small = document.createElement("small"); small.textContent = diff; label.appendChild(small); }
+      b.append(img, label);
+      b.addEventListener("click", () => {
+        if (!dropPicked.delete(i.id)) dropPicked.add(i.id);
+        // Con un solo item posible no se puede apagar (se volvería a prender solo).
+        renderDropItems();
+      });
+      dropItemsEl.appendChild(b);
+    });
+  }
+  dropBossSel.addEventListener("change", renderDropItems);
+  renderDropItems();
+
+  // Selector de boss con miniaturas. El <select> oculto sigue siendo la fuente
+  // del valor; esto solo lo viste. Boss sin miniatura = su inicial.
+  const bossPickBtn = document.getElementById("boss-pick-btn");
+  const bossPickMenu = document.getElementById("boss-pick-menu");
+  function bossThumb(id) {
+    const boss = BOSS_MESOS.find(b => b.id === id);
+    if (boss && boss.icon) {
+      const img = document.createElement("img");
+      img.className = "boss-thumb";
+      img.src = boss.icon;
+      img.alt = "";
+      return img;
+    }
+    const ph = document.createElement("span");
+    ph.className = "boss-thumb";
+    ph.textContent = dropBossName(id)[0];
+    return ph;
+  }
+  function setBossPickOpen(open) {
+    bossPickMenu.hidden = !open;
+    bossPickBtn.setAttribute("aria-expanded", String(open));
+  }
+  function renderBossPick() {
+    const current = dropBossSel.value;
+    bossPickBtn.innerHTML = "";
+    const caret = document.createElement("span");
+    caret.className = "caret";
+    caret.textContent = "▾";
+    bossPickBtn.append(bossThumb(current), dropBossName(current), caret);
+    bossPickMenu.innerHTML = "";
+    [...dropBossSel.options].forEach(o => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.setAttribute("role", "option");
+      b.setAttribute("aria-selected", String(o.value === current));
+      b.className = o.value === current ? "active" : "";
+      b.append(bossThumb(o.value), o.text);
+      b.addEventListener("click", () => {
+        dropBossSel.value = o.value;
+        dropBossSel.dispatchEvent(new Event("change"));
+        setBossPickOpen(false);
+        bossPickBtn.focus();
+      });
+      bossPickMenu.appendChild(b);
+    });
+  }
+  dropBossSel.addEventListener("change", renderBossPick);
+  bossPickBtn.addEventListener("click", () => setBossPickOpen(bossPickMenu.hidden));
+  document.addEventListener("click", e => { if (!e.target.closest("#boss-pick")) setBossPickOpen(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") setBossPickOpen(false); });
+  renderBossPick();
   if (VIEWER) getPersonClassList(VIEWER).forEach(c => dropCharSel.add(new Option(c, c)));
 
   function renderDrops() {
@@ -3129,12 +4065,26 @@
       const name = document.createElement("span");
       name.className = "boss-name";
       if (boss && boss.icon) { const img = document.createElement("img"); img.src = boss.icon; img.alt = ""; name.appendChild(img); }
-      name.append(boss ? boss.name : "Otro");
+      name.append(dropBossName(d.boss));
       tdBoss.appendChild(name);
 
       const tdItem = document.createElement("td");
       tdItem.className = "drop-item";
-      tdItem.textContent = d.item;
+      // Una anotación puede traer varios items. Las de antes del selector
+      // (texto libre) no tienen miniatura.
+      const list = Array.isArray(d.items) && d.items.length ? d.items : [{ id: d.itemId, name: d.item }];
+      list.forEach(it => {
+        const chip = document.createElement("span");
+        chip.className = "drop-chip";
+        if (DROP_ITEMS.some(i => i.id === it.id)) {
+          const thumb = document.createElement("img");
+          thumb.src = `items/${it.id}.png`;
+          thumb.alt = "";
+          chip.appendChild(thumb);
+        }
+        chip.append(it.name);
+        tdItem.appendChild(chip);
+      });
       const tdCls = document.createElement("td");
       tdCls.textContent = d.cls || "—";
       const tdNote = document.createElement("td");
@@ -3148,10 +4098,14 @@
       del.textContent = "✕";
       del.setAttribute("aria-label", `Borrar ${d.item}`);
       del.addEventListener("click", () => {
-        if (!confirm(`¿Borrar "${d.item}" del diario?`)) return;
+        // Sin preguntar: se borra y el aviso deja deshacerlo.
         drops = drops.filter(x => x !== d);
         saveDrops();
         renderDrops();
+        toast(`"${d.item}" borrado del diario`, {
+          type: "info",
+          action: { label: "Deshacer", run: () => { drops.push(d); saveDrops(); renderDrops(); } },
+        });
       });
       tdDel.appendChild(del);
 
@@ -3161,20 +4115,22 @@
   }
   dropForm.addEventListener("submit", e => {
     e.preventDefault();
-    const itemInput = document.getElementById("drop-item");
     const noteInput = document.getElementById("drop-note");
-    const item = itemInput.value.trim();
-    if (!item) return;
+    const picked = DROP_ITEMS.filter(i => dropPicked.has(i.id)).map(i => ({ id: i.id, name: i.name }));
+    if (!picked.length) { toast("Elige qué cayó (puede ser más de una cosa)", { type: "error" }); return; }
     const date = dropDateInput.value || todayYmd();
     const week = weekOfDate(date);
-    drops.push({ date, week, ts: Date.now(), boss: dropBossSel.value, item, cls: dropCharSel.value, note: noteInput.value.trim() });
+    const item = picked.map(p => p.name).join(" + ");
+    drops.push({ date, week, ts: Date.now(), boss: dropBossSel.value, items: picked, item, cls: dropCharSel.value, note: noteInput.value.trim() });
     saveDrops();
-    itemInput.value = "";
     noteInput.value = "";
     dropWeek = week; // se muestra la semana donde quedó lo recién anotado
+    toast(`Anotado: ${item}`);
+    dropPicked = new Set();
+    renderDropItems();
     renderDrops();
-    itemInput.focus();
   });
+
   renderDrops();
 
   // --- Roster: cartitas de las mulas de quien está viendo ---
@@ -3196,12 +4152,27 @@
     try { localStorage.setItem(MULE_INFO_KEY, JSON.stringify(muleInfo)); } catch (e) {}
   }
 
+  // Mulas del roster que quitaste: un botón por cada una para restaurarla.
+  const restoreEl = document.getElementById("restore-chars");
+  if (VIEWER && HIDDEN_CHARS.length) {
+    restoreEl.hidden = false;
+    restoreEl.append("Quitadas:");
+    HIDDEN_CHARS.forEach(cls => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = `↺ ${cls}`;
+      b.title = `Restaurar ${cls}`;
+      b.addEventListener("click", () => saveHiddenChars(HIDDEN_CHARS.filter(h => h !== cls), `${cls} restaurada`));
+      restoreEl.appendChild(b);
+    });
+  }
+
   function renderMuleCards() {
     muleCardsEl.innerHTML = "";
     if (!VIEWER) {
       const empty = document.createElement("p");
       empty.className = "mule-empty";
-      empty.textContent = "Elegí quién sos para ver tus mulas.";
+      empty.textContent = "Elige quién eres para ver tus mulas.";
       muleCardsEl.appendChild(empty);
       return;
     }
@@ -3226,21 +4197,28 @@
       const strong = document.createElement("strong");
       strong.textContent = cls;
       const small = document.createElement("small");
-      small.textContent = mine ? "La agregaste vos" : "Del roster";
+      small.textContent = mine ? "La agregaste tú" : "Del roster";
       title.append(strong, small);
       head.append(avatar, title);
-      if (mine) {
-        const x = document.createElement("button");
-        x.type = "button";
-        x.className = "mule-remove";
-        x.textContent = "✕";
-        x.title = "Quitar esta mula";
-        x.setAttribute("aria-label", `Quitar ${cls}`);
-        x.addEventListener("click", () => {
-          if (confirm(`¿Quitar a ${cls} de tus mulas?`)) saveMyChars(MY_CHARS.filter(m => m !== cls));
+      // Todas se pueden quitar: las propias se borran; las del roster quedan
+      // ocultas para ti y se pueden restaurar abajo.
+      const x = document.createElement("button");
+      x.type = "button";
+      x.className = "mule-remove";
+      x.textContent = "✕";
+      x.title = "Quitar esta mula";
+      x.setAttribute("aria-label", `Quitar ${cls}`);
+      x.addEventListener("click", () => {
+        const msg = mine
+          ? `¿Quitar a ${cls} de tus mulas?`
+          : `¿Quitar a ${cls} de tus mulas? Sus runs dejan de aparecerte; la puedes restaurar después desde aquí.`;
+        askConfirm(msg, "Sí, quitar").then(ok => {
+          if (!ok) return;
+          if (mine) saveMyChars(MY_CHARS.filter(m => m !== cls), `${cls} quitada de tus mulas`);
+          else saveHiddenChars([...HIDDEN_CHARS, cls], `${cls} quitada de tus mulas`);
         });
-        head.appendChild(x);
-      }
+      });
+      head.appendChild(x);
 
       const fields = document.createElement("div");
       fields.className = "mule-fields";
@@ -3257,7 +4235,10 @@
         if (f.maxlength) input.maxLength = f.maxlength;
         if (f.min) { input.min = f.min; input.max = f.max; }
         input.value = info[f.key] || "";
-        input.addEventListener("change", () => saveMuleInfo(cls, f.key, input.value.trim()));
+        input.addEventListener("change", () => {
+          saveMuleInfo(cls, f.key, input.value.trim());
+          toast(`${cls}: ${f.label.toLowerCase()} guardado`);
+        });
         label.append(cap, input);
         fields.appendChild(label);
       });
@@ -3310,7 +4291,7 @@
   // --- Barra lateral: una vista por sección ---
   // Muestra una sección a la vez; la elegida queda en la URL (#mesos) y se
   // recuerda para la próxima visita de esa persona.
-  const VIEWS = ["horarios", "bosses", "mesos", "diario", "roster"];
+  const VIEWS = ["horarios", "bosses", "mesos", "mesitos", "diario", "roster"];
   const VIEW_KEY = PREFIX + "view";
   function showView(id) {
     if (!VIEWS.includes(id)) id = VIEWS[0];
@@ -3344,6 +4325,436 @@
   try { savedView = localStorage.getItem(VIEW_KEY); } catch (e) {}
   const hashView = viewFromHash();
   showView(VIEWS.includes(hashView) ? hashView : (savedView || (VIEWER ? "horarios" : "bosses")));
+
+  // --- Exportar mis datos ---
+  // Baja un JSON con todo lo que la persona conectada tiene guardado en este
+  // navegador, pensado para migrarlo el día que haya un backend: una parte
+  // ordenada y legible (mulas, runs, mesos ganados, diario) y, en "raw", las
+  // claves tal cual están guardadas, por si hace falta algo que no esté arriba.
+  function buildExport() {
+    const raw = {};
+    Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).sort()
+      .forEach(k => { raw[k.slice(PREFIX.length)] = localStorage.getItem(k); });
+    const mules = [...BASE_CLASSES[VIEWER], ...MY_CHARS].map(cls => {
+      const info = muleInfo[cls] || {};
+      const hidden = HIDDEN_CHARS.includes(cls);
+      const state = loadMesosState(VIEWER, cls);
+      return {
+        class: cls,
+        source: MY_CHARS.includes(cls) ? "added" : "roster",
+        hidden,
+        name: info.name || "",
+        level: info.level || "",
+        cp: info.cp || "",
+        color: info.color || "",
+        bosses: BOSS_MESOS.filter(b => state[b.id].on).map(b => ({
+          boss: b.id,
+          bossName: b.name,
+          difficulty: state[b.id].diff,
+          partySize: state[b.id].size,
+          fromParty: state[b.id].fromParty,
+          monthly: !!b.monthly,
+          mesos: Math.round(b.prices[state[b.id].diff] / state[b.id].size),
+        })),
+      };
+    });
+    const runs = runsFor(VIEWER).map(r => {
+      const sched = getRunSched(r.id);
+      return {
+        boss: r.boss.id,
+        bossName: r.boss.name,
+        mule: r.cls,
+        difficulty: r.diff,
+        partners: r.partners,
+        solo: isSoloRun(r),
+        day: sched.day || "",
+        time: sched.time || "",
+        done: isRunDone(r.id),
+      };
+    });
+    const bossCards = [...document.querySelectorAll(".boss-card")].map(card => ({
+      boss: card.querySelector("h3").textContent.trim(),
+      status: card.querySelector("select.status").value,
+      notes: card.querySelector(".notes-field").textContent.trim(),
+    }));
+    return {
+      app: "bossing-imanity",
+      exportVersion: 1,
+      storageVersion: localStorage.getItem("bp_storage_version"),
+      exportedAt: new Date().toISOString(),
+      user: VIEWER,
+      currentWeek: WEEK_START,
+      mules,
+      runs,
+      earnings: Object.keys(earnings).sort().map(week => ({
+        week,
+        total: Math.round(weekTotal(week)),
+        runs: earnings[week].items.map(i => ({ ...i, mesos: Math.round(i.mesos) })),
+      })),
+      diary: [...drops].sort((a, b) => a.date.localeCompare(b.date) || a.ts - b.ts).map(d => ({
+        date: d.date,
+        week: d.week,
+        boss: d.boss,
+        bossName: dropBossName(d.boss),
+        mule: d.cls,
+        items: Array.isArray(d.items) && d.items.length ? d.items : [{ id: d.itemId || "", name: d.item }],
+        note: d.note || "",
+      })),
+      bossCards,
+      raw,
+    };
+  }
+  document.getElementById("export").addEventListener("click", () => {
+    if (!VIEWER) return;
+    const blob = new Blob([JSON.stringify(buildExport(), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bossing-imanity-${VIEWER.toLowerCase()}-${todayYmd()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("Datos exportados: revisa tus descargas");
+  });
+
+  // --- Asistente: mini chat con respuestas automáticas (reglas fijas, sin IA) ---
+  // Entiende saludos y pedidos simples sobre las runs de quien está conectado:
+  // "completa al battle mage", "desmarca la sia", "qué me falta", "cuánto llevo",
+  // "cuándo es el reset", "abre mesitos". Todo actúa sobre lo guardado en este navegador.
+  const chatEl = document.getElementById("chat");
+  const chatLog = document.getElementById("chat-log");
+  const chatInput = document.getElementById("chat-input");
+  const chatToggle = document.getElementById("chat-toggle");
+  const botNorm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  const botFlat = s => botNorm(s).replace(/ /g, "");
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  // Qué mula nombra el mensaje: por clase ("battlemage", "battle mage"), por el
+  // nombre que le pusieron en el Roster, o por iniciales ("bm", "wa").
+  function botFindMule(text) {
+    const flat = botFlat(text);
+    const words = botNorm(text).split(" ");
+    let best = null;
+    const consider = (cls, len) => { if (!best || len > best.len) best = { cls, len }; };
+    getPersonClassList(VIEWER).forEach(cls => {
+      [cls, (muleInfo[cls] || {}).name].filter(Boolean).forEach(name => {
+        const key = botFlat(name);
+        if (key.length < 2) return;
+        // Una sola palabra tiene que aparecer entera, para no confundir "sia" con otra cosa.
+        const hit = botNorm(name).includes(" ") ? flat.includes(key) : words.includes(key);
+        if (hit) consider(cls, key.length);
+      });
+      const initials = botNorm(cls).split(" ").map(w => w[0]).join("");
+      if (initials.length >= 2 && words.includes(initials)) consider(cls, 1);
+    });
+    return best ? best.cls : null;
+  }
+  const BOSS_ALIASES = {
+    kalos: ["kalos", "ckalos"], limbo: ["limbo"], kaling: ["kaling"], seren: ["seren"], malefic: ["malefic"],
+    adversary: ["adversary", "adver"], baldrix: ["baldrix"], blackmage: ["blackmage"], jupiter: ["jupiter"],
+    lotus: ["lotus"], verus: ["verus", "vhilla", "verushilla"], darknell: ["darknell"], will: ["will"],
+    slime: ["slime"], gloom: ["gloom"], lucid: ["lucid"], damien: ["damien"],
+  };
+  function botFindBoss(text) {
+    const flat = botFlat(text);
+    const words = botNorm(text).split(" ");
+    const id = Object.keys(BOSS_ALIASES).find(b => BOSS_ALIASES[b].some(a => words.includes(a) || (a.length > 6 && flat.includes(a))));
+    return id ? BOSS_MESOS.find(b => b.id === id) : null;
+  }
+  function botSetDone(runs, done) {
+    const changed = runs.filter(r => isRunDone(r.id) !== done);
+    changed.forEach(r => setRunDone(r.id, done));
+    if (changed.length) renderRuns();
+    return changed.length;
+  }
+  const BOT_VIEWS = {
+    horarios: ["runs", "horarios", "checklist"], bosses: ["bosses", "parties", "partys"], mesos: ["mulas", "info"],
+    mesitos: ["mesitos", "historico", "ganancias"], diario: ["diario", "pitches", "piches", "drops"], roster: ["roster"],
+  };
+  const BOT_HELP = "Puedo hacer esto:\n" +
+    "• \"completa al battle mage\" — tilda todas sus runs\n" +
+    "• \"completa kalos del wind archer\" — una sola run\n" +
+    "• \"completa todo\" / \"desmarca la sia\"\n" +
+    "• \"agrega al battle mage que le cayó grindstone lv 5 de kalos\" — lo anota en el diario\n" +
+    "• \"qué me falta\" — pendientes por mula\n" +
+    "• \"cuánto llevo\" — mesos de la semana\n" +
+    "• \"cuándo es el reset\"\n" +
+    "• \"abre mesitos\" — ir a una sección";
+
+  // Apodos por persona: el asistente saluda a veces con uno de estos y a veces
+  // con el nombre normal (se elige al azar en cada saludo).
+  const BOT_NICKNAMES = {
+    Franklin: ["Otaku", "Master"],
+    Sebas: ["Sebastory"],
+    Choscar: ["Choscarino", "Pan con vino"],
+    Edu: ["Eduuuuuuu"],
+    Tacos: ["Destiny de temu", "Tacos de caca", "Taquiños"],
+    Rikar: ["Joto"],
+    Mechitax: ["Ness", "Trump lover"],
+    Chepas: ["Chipaz", "Chupaz"],
+    Sushimitzu: ["Suchiquito", "Suchinratensei"],
+    Danna: ["Quack", "Quajmire", "Quien te crees"],
+    Crunchyroll: ["Cruncher", "Crunchy", "Danna Lover"],
+  };
+  const botName = () => pick([VIEWER, ...(BOT_NICKNAMES[VIEWER] || [])]);
+  const botGreeting = () => {
+    const name = botName();
+    return pick([`¡Hola, ${name}!`, `¡Buenas, ${name}! 🎃`, `¡Hey, ${name}! ¿Qué hacemos hoy?`]);
+  };
+
+  // --- Anotar drops en el diario desde el chat ---
+  // "agrega al battle mage que le cayó grindstone lv 5 de kalos". Si falta o no
+  // se entiende algo (item, boss o mula), pregunta y guarda lo que ya entendió
+  // en botPendingAdd para completarlo con el siguiente mensaje.
+  const DROP_ALIASES = {
+    "anillo-limbo": ["anillo de limbo", "anillo limbo"],
+    "anillo-malefic": ["anillo de malefic", "anillo malefic"],
+    "anillo-slime": ["anillo de slime", "anillo slime"],
+    "medalla-adversary": ["medalla", "medallita", "medal"],
+    "pendiente-baldrix": ["pendiente", "pendant", "collar"],
+    "emblema-seren": ["emblema", "emblem", "mitra"],
+    "hammer": ["hammer", "martillo"],
+    "genesis-badge": ["badge", "genesis badge", "genesis"],
+    "berserked": ["berserked", "berserker", "berserk"],
+    "black-heart": ["black heart", "black hart", "heart", "corazon"],
+    "total-control": ["total control", "tc"],
+    "sos": ["sos", "source of suffering", "source"],
+    "commanding": ["commanding", "commanding force", "earring", "arete"],
+    "endless-terror": ["endless terror", "endless", "et"],
+    "dreamy-belt": ["dreamy belt", "dreamy", "belt", "cinturon"],
+    "librito-will": ["librito", "libro", "spellbook", "cursed spellbook"],
+    "eyepatch": ["eyepatch", "magic eyepatch", "parche"],
+  };
+  const dropItem = id => DROP_ITEMS.find(i => i.id === id);
+  const namesOf = ids => ids.map(id => dropItem(id).name).join(", ");
+  let botPendingAdd = null;
+
+  // Devuelve { items: [ids], ask: "pregunta" } — ask cuando el nombre es
+  // ambiguo (grindstone sin nivel, cajita o anillo sin boss).
+  function botFindItems(text, boss) {
+    const t = ` ${botNorm(text)} `;
+    const hasWord = w => t.includes(` ${w} `);
+    const ofBoss = ids => (boss ? ids.filter(id => boss in dropItem(id).bosses) : ids);
+    const items = new Set();
+    let ask = null;
+    Object.keys(DROP_ALIASES).forEach(id => { if (DROP_ALIASES[id].some(hasWord)) items.add(id); });
+
+    if (/ (grindstone|grindstones|grind|gs|gs5|gs6) /.test(t)) {
+      const level = (t.match(/ (?:lv|lvl|nivel|level) ?([56]) /) || t.match(/ gs([56]) /) || t.match(/ ([56]) /) || [])[1];
+      const opts = level ? [`grindstone-${level}`] : ofBoss(["grindstone-5", "grindstone-6"]);
+      if (opts.length === 1) items.add(opts[0]);
+      else ask = "¿Grindstone Lv 5 o Lv 6?";
+    }
+    if (/ (cajita|cajitas|caja|eternal|ethernal) /.test(t)) {
+      const cajas = DROP_ITEMS.filter(i => i.id.startsWith("caja-")).map(i => i.id);
+      const opts = ofBoss(cajas);
+      if (boss && opts.length === 1) items.add(opts[0]);
+      else ask = boss
+        ? `${dropBossName(boss)} no tira cajita. ¿De qué boss fue?`
+        : `¿La cajita de qué boss? (${cajas.map(id => dropBossName(Object.keys(dropItem(id).bosses)[0])).join(", ")})`;
+    }
+    const rings = ["anillo-limbo", "anillo-malefic", "anillo-slime"];
+    if (/ (anillo|ring) /.test(t) && !rings.some(id => items.has(id))) {
+      const opts = ofBoss(rings);
+      if (boss && opts.length === 1) items.add(opts[0]);
+      else ask = "¿Cuál anillo: de Limbo, de Malefic o de Slime?";
+    }
+    return { items: [...items], ask };
+  }
+
+  function botAddDrop(text) {
+    const prev = botPendingAdd || {};
+    const classes = getPersonClassList(VIEWER);
+    const bossObj = botFindBoss(text);
+    let boss = bossObj ? bossObj.id : prev.boss;
+    const mule = botFindMule(text) || prev.mule || (classes.length === 1 ? classes[0] : null);
+    let found = botFindItems(text, boss);
+    let itemText = text;
+    // El mensaje nuevo no nombra item: se completa con lo que venía de antes ("gs" + "lv 5").
+    if (!found.items.length && !found.ask && prev.text) {
+      itemText = prev.text + " " + text;
+      found = botFindItems(itemText, boss);
+    }
+    const remember = () => { botPendingAdd = { text: itemText, boss, mule }; };
+
+    if (found.ask) { remember(); return found.ask; }
+    if (!found.items.length) {
+      remember();
+      return boss
+        ? `No ubiqué qué item fue. De ${dropBossName(boss)} puede caer: ${namesOf(DROP_ITEMS.filter(i => boss in i.bosses).map(i => i.id))}. ¿Cuál fue?`
+        : "No ubiqué qué item fue. Dime el nombre, por ejemplo \"black heart\", \"grindstone lv 5\" o \"cajita de kalos\".";
+    }
+    if (!boss) {
+      // Sin boss en el mensaje: sirve si todos los items caen de un único boss.
+      const common = BOSS_MESOS.map(b => b.id).filter(id => found.items.every(i => id in dropItem(i).bosses));
+      if (common.length === 1) boss = common[0];
+      else {
+        remember();
+        return common.length
+          ? `¿De qué boss fue? ${namesOf(found.items)} cae de: ${common.map(dropBossName).join(", ")}.`
+          : `${namesOf(found.items)} no caen del mismo boss. Anótalos por separado, uno por boss.`;
+      }
+    }
+    const wrong = found.items.filter(id => !(boss in dropItem(id).bosses));
+    if (wrong.length) {
+      remember();
+      return `${namesOf(wrong)} no cae de ${dropBossName(boss)}. De ${dropBossName(boss)} cae: ` +
+        `${namesOf(DROP_ITEMS.filter(i => boss in i.bosses).map(i => i.id))}. ¿Me corriges el item o el boss?`;
+    }
+    if (!mule) { remember(); return `¿A cuál mula le cayó? Tienes: ${classes.join(", ")}.`; }
+
+    const picked = found.items.map(id => ({ id, name: dropItem(id).name }));
+    const item = picked.map(p => p.name).join(" + ");
+    drops.push({ date: todayYmd(), week: WEEK_START, ts: Date.now(), boss, items: picked, item, cls: mule, note: "" });
+    saveDrops();
+    dropWeek = WEEK_START;
+    renderDrops();
+    botPendingAdd = null;
+    return `¡Anotado en el diario! ${item} de ${dropBossName(boss)} para ${mule}. 📖`;
+  }
+
+  function botReply(text) {
+    const t = botNorm(text);
+    const words = t.split(" ");
+    const has = re => re.test(t);
+
+    // Diario: pedido nuevo, o respuesta a una pregunta que quedó pendiente.
+    if (botPendingAdd && has(/\b(cancela\w*|olvidalo|dejalo|nada)\b/)) { botPendingAdd = null; return "Listo, no anoté nada."; }
+    const otherIntent = has(/\b(complet\w*|marc\w*|tild\w*|desmarc\w*|destild\w*|falta\w*|pendiente\w*|reset|ayuda|gracias|hola|chao)\b/);
+    if (has(/\b(agreg\w*|anot\w*|anad\w*|registr\w*|cayo|cayeron|dropeo|dropearon|salio)\b/) || (botPendingAdd && !otherIntent)) {
+      return botAddDrop(text);
+    }
+    botPendingAdd = null;
+
+    const runs = runsFor(VIEWER);
+    const mule = botFindMule(text);
+    const boss = botFindBoss(text);
+
+    // Tildar / destildar runs
+    const undo = has(/\b(desmarc\w*|destild\w*|descomplet\w*|deshac\w*|quita\w*)\b/);
+    if (undo || has(/\b(complet\w*|marc\w*|tild\w*|termin\w*|hice|listo|lista)\b/)) {
+      const everything = has(/\b(todo|todos|todas)\b/);
+      if (!mule && !boss && !everything) {
+        return `¿De cuál mula? Tienes: ${getPersonClassList(VIEWER).join(", ")}. También vale "completa todo".`;
+      }
+      let target = runs;
+      if (mule) target = target.filter(r => r.cls === mule);
+      if (boss) target = target.filter(r => r.boss.id === boss.id);
+      // "en solo" / "en party" ("solo" suelto no, porque también es "solamente").
+      if (has(/\b(en solo|solos)\b/)) target = target.filter(isSoloRun);
+      else if (has(/\b(en party|partys|parties)\b/)) target = target.filter(r => !isSoloRun(r));
+      const what = [boss && boss.name, mule && `de ${mule}`].filter(Boolean).join(" ") || "todas tus mulas";
+      if (!target.length) return `No encontré runs de ${what} esta semana.`;
+      const n = botSetDone(target, !undo);
+      if (undo) return n ? `Listo, destildé ${plural(n, "run", "runs")} (${what}).` : `No había nada tildado en ${what}.`;
+      return n
+        ? `¡Listo! Marqué ${plural(n, "run", "runs")} como ${n === 1 ? "hecha" : "hechas"} (${what}). 🎃`
+        : `${what.replace(/^de /, "")} ya estaba completa esta semana. ✓`;
+    }
+
+    // Pendientes
+    if (has(/\b(falta\w*|pendiente\w*|queda\w*|debo)\b/)) {
+      if (!runs.length) return "No tienes runs esta semana.";
+      const pending = runs.filter(r => !isRunDone(r.id));
+      if (!pending.length) return "¡Nada! Ya hiciste todas tus runs de la semana. 🎉";
+      if (mule) {
+        const mine = pending.filter(r => r.cls === mule);
+        return mine.length
+          ? `A ${mule} le ${mine.length === 1 ? "falta" : "faltan"} ${mine.length}: ${mine.map(r => r.boss.name).join(", ")}.`
+          : `${mule} ya está completa. ✓`;
+      }
+      const lines = getPersonClassList(VIEWER).map(c => {
+        const all = runs.filter(r => r.cls === c);
+        const left = all.filter(r => !isRunDone(r.id)).length;
+        return all.length ? `• ${c}: ${left ? `faltan ${left} de ${all.length}` : "completa ✓"}` : null;
+      }).filter(Boolean);
+      return `Te faltan ${plural(pending.length, "run", "runs")}:\n${lines.join("\n")}`;
+    }
+
+    // Mesos de la semana
+    if (has(/\b(mesos|mesitos|gane|ganado|ganando|llevo|cuanto)\b/) && !has(/\b(abr\w*|ir|muestra\w*|llevame|ve)\b/)) {
+      const now = weekTotal(WEEK_START);
+      const possible = runs.filter(r => !r.boss.monthly).reduce((a, r) => a + runMesos(r).mesos, 0);
+      if (!now) return possible ? `Todavía nada esta semana. Tienes ${fmtShort(possible)} posibles si haces todo.` : "Todavía no tienes runs esta semana.";
+      return `Esta semana llevas ${fmtShort(now)}` + (possible ? ` de ${fmtShort(possible)} posibles (${Math.min(100, Math.round((now / possible) * 100))}%).` : ".");
+    }
+
+    if (has(/\breset\b/)) return `${resetTimerEl.textContent.trim()}\n${weekChipEl.textContent.replace(/\s+/g, " ").trim()}`;
+
+    // Ir a una sección
+    if (has(/\b(abr\w*|ir|muestra\w*|llevame|ve|vamos)\b/)) {
+      const view = Object.keys(BOT_VIEWS).find(v => BOT_VIEWS[v].some(k => words.includes(k)));
+      if (view) { showView(view); return `Abrí ${document.querySelector(`.nav-item[data-view="${view}"] .nav-label`).textContent}.`; }
+    }
+
+    if (has(/\b(ayuda|help|comandos|puedes|podes|sabes|haces)\b/)) return BOT_HELP;
+    if (has(/\b(gracias|thanks|thx|ty)\b/)) return pick(["¡De nada!", "¡Con gusto! 🎃", "Para eso estoy."]);
+    if (has(/\b(chao|adios|bye|nos vemos|hasta luego)\b/)) return pick(["¡Chao! Suerte con los drops.", "¡Nos vemos!"]);
+    if (has(/^(hola|holi|holis|buenas|buenos|buen dia|hey|ey|que mas|quiubo|saludos|hello|hi|wenas|alo)\b/)) {
+      return botGreeting();
+    }
+    return "No te entendí. Escribe \"ayuda\" para ver lo que puedo hacer.";
+  }
+
+  function chatSay(text, who) {
+    const el = document.createElement("div");
+    el.className = "chat-msg " + who;
+    el.textContent = text;
+    chatLog.appendChild(el);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+  function chatSend(text) {
+    text = text.trim();
+    if (!text || !VIEWER) return;
+    chatSay(text, "me");
+    let answer;
+    try { answer = botReply(text); } catch (e) { answer = "Uy, algo falló con eso. Intenta de nuevo."; }
+    setTimeout(() => chatSay(answer, "bot"), 220);
+  }
+  function setChatOpen(open) {
+    chatEl.hidden = !open;
+    chatToggle.setAttribute("aria-expanded", String(open));
+    if (!open) return;
+    if (!chatLog.children.length) {
+      chatSay(`¡Hola, ${botName()}!`, "bot");
+      chatSay(`Soy el asistente. Dime por ejemplo "completa al ${getPersonClassList(VIEWER)[0] || "battle mage"}" o escribe "ayuda".`, "bot");
+    }
+    chatInput.focus();
+  }
+  ["¿Qué me falta?", "¿Cuánto llevo?", "Ayuda"].forEach(label => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.addEventListener("click", () => chatSend(label));
+    document.getElementById("chat-chips").appendChild(b);
+  });
+  chatToggle.addEventListener("click", () => setChatOpen(chatEl.hidden));
+
+  // Minimizar el botón hacia la derecha (queda medio oculto y sale al pasarle
+  // el mouse). Se recuerda en este navegador.
+  const chatFab = document.getElementById("chat-fab");
+  const chatMiniBtn = document.getElementById("chat-mini");
+  function setChatMini(mini) {
+    chatFab.classList.toggle("mini", mini);
+    chatMiniBtn.textContent = mini ? "‹" : "›";
+    chatMiniBtn.title = mini ? "Dejar siempre a la vista" : "Minimizar";
+    chatMiniBtn.setAttribute("aria-label", mini ? "Dejar el asistente siempre a la vista" : "Minimizar el asistente");
+    try { localStorage.setItem("bp_chat_mini", mini ? "1" : "0"); } catch (e) {}
+  }
+  let chatMini = false;
+  try { chatMini = localStorage.getItem("bp_chat_mini") === "1"; } catch (e) {}
+  setChatMini(chatMini);
+  chatMiniBtn.addEventListener("click", () => setChatMini(!chatFab.classList.contains("mini")));
+  document.getElementById("chat-close").addEventListener("click", () => setChatOpen(false));
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !chatEl.hidden) setChatOpen(false); });
+  document.getElementById("chat-form").addEventListener("submit", e => {
+    e.preventDefault();
+    chatSend(chatInput.value);
+    chatInput.value = "";
+  });
 
   // --- Reproductor de música (barra lateral) ---
   // Pasa las pistas en loop. Pista, volumen, posición y si estaba sonando se
@@ -3471,6 +4882,13 @@
 
   renderRuns();
   if (!VIEWER) openGate();
+
+  // Aviso que quedó pendiente de antes de recargar (login, sumar mula, salir…).
+  try {
+    const flash = JSON.parse(sessionStorage.getItem("bp_flash") || "null");
+    sessionStorage.removeItem("bp_flash");
+    if (flash && flash.message) toast(flash.message, { type: flash.type });
+  } catch (e) {}
 </script>
 
 </body>
